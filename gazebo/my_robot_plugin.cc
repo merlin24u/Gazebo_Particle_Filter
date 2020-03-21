@@ -13,9 +13,9 @@
 
 using namespace std;
 
-const int BASE_WIDTH = 2032;    // millimeters
-const int MAX_SPEED = 500;     // units
-const double SPEED_COEF = 2.93;   // 1mm/sec corresponds to X units of real thymio speed
+const int BASE_WIDTH = 200;    // millimeters
+const int MAX_SPEED = 5;     // m/s
+// const double SPEED_COEF = 1;   // 1mm/sec corresponds to X units of real robot speed
 
 namespace gazebo
 {
@@ -51,23 +51,27 @@ namespace gazebo
     /// \param[in] _model A pointer to the model that this plugin is
     /// attached to.
     /// \param[in] _sdf A pointer to the plugin's SDF element.
-    virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
-    {
+    virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf){
       // Safety check
-      if (_model->GetJointCount() == 0)
-	{
-	  cerr << "Invalid joint count, MyRobot plugin not loaded\n";
-	  return;
-	}
+      if(_model->GetJointCount() == 0){
+	cerr << "Invalid joint count, MyRobot plugin not loaded\n";
+	return;
+      }
 
       // Store the model pointer for convenience.
       this->model = _model;
 
       this->joint = vector<physics::JointPtr>(begin(_model->GetJoints()), end(_model->GetJoints()));
 
+      // Init PID
+      /*
+	common::PID pid(0.1, 0, 0);
+	this->model->GetJointController()->SetVelocityPID(this->joint[0]->GetScopedName(), pid);
+	this->model->GetJointController()->SetVelocityPID(this->joint[0]->GetScopedName(), pid);
+      */
+
       // Initialize ros, if it has not already bee initialized.
-      if (!ros::isInitialized())
-	{
+      if(!ros::isInitialized()){
 	  int argc = 0;
 	  char **argv = NULL;
 	  ros::init(argc, argv, "gazebo_client",
@@ -93,33 +97,39 @@ namespace gazebo
     }
 
     /// \brief Handle an incoming message from ROS
-    /// \param[in] _msg A float value that is used to set the velocity
+    /// \param[in] data Joy inputs that is used to set the velocity
     /// of the MyRobot.
     void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
     {
-      float x = data->linear.x * 1000.0; // from meters to millimeters
-      x = x * SPEED_COEF; // to thymio units
+      float x = -data->linear.x * 1000.0; // from meters to millimeters
+      // x = x * SPEED_COEF; // to robot units
       float th = data->angular.z * (BASE_WIDTH/2); // in mm
-      th = th * SPEED_COEF; // in thymio units
-      float k = max(abs(x-th),abs(x+th));
+      // th = th * SPEED_COEF; // in robot units
+      float k = max(abs(x - th), abs(x + th));
+      
       // sending commands higher than max speed will fail
       if (k > MAX_SPEED){
-	x = x*MAX_SPEED/k;
-	th = th*MAX_SPEED/k;
+	x = x * MAX_SPEED / k;
+	th = th * MAX_SPEED / k;
       }
       
-      this->SetVelocity(x-th, x+th);
+      this->SetVelocity(x - th, x + th);
     }
 
     /// \brief Set the velocity of the MyRobot
     /// \param[in] _vel New target velocity
     void SetVelocity(const double &_x, const double &_y)
     {
+      // cout << "right : " << _x << ", left : " << _y << endl;
+
       // Set the joint's target velocity.
-      this->model->GetJointController()->SetVelocityTarget(
-							   this->joint[0]->GetScopedName(), _x);
-      this->model->GetJointController()->SetVelocityTarget(
-							   this->joint[1]->GetScopedName(), _y);
+      this->joint[0]->SetVelocity(0, _x);
+      this->joint[1]->SetVelocity(0, _y);
+      
+      /*
+      this->model->GetJointController()->SetVelocityTarget(this->joint[0]->GetScopedName(), _x);
+      this->model->GetJointController()->SetVelocityTarget(this->joint[1]->GetScopedName(), _y);
+      */    
     }
 
   private:
