@@ -14,8 +14,7 @@
 using namespace std;
 
 const int BASE_WIDTH = 200;    // millimeters
-const int MAX_SPEED = 5;     // m/s
-// const double SPEED_COEF = 1;   // 1mm/sec corresponds to X units of real robot speed
+int MAX_SPEED = 10;     // m/s
 
 namespace gazebo
 {
@@ -70,6 +69,10 @@ namespace gazebo
 	this->model->GetJointController()->SetVelocityPID(this->joint[0]->GetScopedName(), pid);
       */
 
+      // Check that the velocity element exists, then read the value
+      if (_sdf->HasElement("velocity"))
+	MAX_SPEED = _sdf->Get<double>("velocity");
+
       // Initialize ros, if it has not already bee initialized.
       if(!ros::isInitialized()){
 	  int argc = 0;
@@ -102,9 +105,7 @@ namespace gazebo
     void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
     {
       float x = -data->linear.x * 1000.0; // from meters to millimeters
-      // x = x * SPEED_COEF; // to robot units
       float th = data->angular.z * (BASE_WIDTH/2); // in mm
-      // th = th * SPEED_COEF; // in robot units
       float k = max(abs(x - th), abs(x + th));
       
       // sending commands higher than max speed will fail
@@ -117,7 +118,8 @@ namespace gazebo
     }
 
     /// \brief Set the velocity of the MyRobot
-    /// \param[in] _vel New target velocity
+    /// \param[in] _x New target velocity
+    /// \param[in] _y New target velocity
     void SetVelocity(const double &_x, const double &_y)
     {
       // cout << "right : " << _x << ", left : " << _y << endl;
@@ -125,11 +127,11 @@ namespace gazebo
       // Set the joint's target velocity.
       this->joint[0]->SetVelocity(0, _x);
       this->joint[1]->SetVelocity(0, _y);
-      
+
       /*
       this->model->GetJointController()->SetVelocityTarget(this->joint[0]->GetScopedName(), _x);
       this->model->GetJointController()->SetVelocityTarget(this->joint[1]->GetScopedName(), _y);
-      */    
+      */
     }
 
   private:

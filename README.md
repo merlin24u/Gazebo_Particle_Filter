@@ -14,14 +14,14 @@ cmake ..
 make
 ```
 
-* Launch gazebo
+* Launch gazebo (inside `/gazebo`)
 
 ```
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:<dir_path>/gazebo/build
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:~/catkin_ws/src/my_robot/gazebo/build
 gazebo ../my_robot.world
 ```
 
-* Build ROS part (inside a catkin-ws)
+* Build ROS part (inside catkin_ws)
 
 ```
 catkin_make
@@ -31,7 +31,7 @@ catkin_make
 
 ```
 roscore
-rosparam set joy_node/dev "/dev/input/jsX"
+rosparam set joy_node/dev "/dev/input/js0"
 rosrun joy joy_node
 rosrun my_robot main
 ```
