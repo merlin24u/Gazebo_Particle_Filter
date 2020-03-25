@@ -10,6 +10,11 @@
       <uri>model://ground_plane</uri>
     </include>
 
+    <!-- map -->
+    <include>
+      <uri>model://Map</uri>
+    </include>
+
     <!-- model -->
     <model name="my_robot">
       <static>false</static>

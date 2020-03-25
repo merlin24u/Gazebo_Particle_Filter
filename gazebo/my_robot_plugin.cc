@@ -13,8 +13,8 @@
 
 using namespace std;
 
-const int BASE_WIDTH = 200;    // millimeters
-int MAX_SPEED = 10;     // m/s
+const int BASE_WIDTH = 200; // millimeters
+int MAX_SPEED = 10; // radian/s default
 
 namespace gazebo
 {

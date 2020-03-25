@@ -2,8 +2,16 @@
 
 * ROS-melodic
 * Gazebo-9
+* Ubuntu 18.04
 
 ## Instructions
+
+* System (modidy `~/.bashrc`)
+
+```
+source /usr/share/gazebo/setup.sh
+export GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:~/catkin_ws/src/my_robot/models
+```
 
 * Build Gazebo part (inside `/gazebo`)
 
