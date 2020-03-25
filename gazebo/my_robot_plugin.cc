@@ -125,8 +125,8 @@ namespace gazebo
       // cout << "right : " << _x << ", left : " << _y << endl;
 
       // Set the joint's target velocity.
-      this->joint[0]->SetVelocity(0, _x);
-      this->joint[1]->SetVelocity(0, _y);
+      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
+      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
 
       /*
       this->model->GetJointController()->SetVelocityTarget(this->joint[0]->GetScopedName(), _x);
