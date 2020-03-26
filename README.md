@@ -26,7 +26,7 @@ make
 
 ```
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:~/catkin_ws/src/my_robot/gazebo/build
-gazebo ../my_robot.world
+gazebo -s libgazebo_ros_api_plugin.so my_robot.world
 ```
 
 * Build ROS part (inside catkin_ws)
