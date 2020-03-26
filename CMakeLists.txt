@@ -8,8 +8,10 @@ project(my_robot)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
   roscpp
+  cv_bridge
+  image_transport
+  geometry_msgs
   sensor_msgs
   message_generation
 )
@@ -106,7 +108,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot
-   CATKIN_DEPENDS message_runtime geometry_msgs roscpp sensor_msgs
+   CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs sensor_msgs
 #  DEPENDS system_lib
 )
 
