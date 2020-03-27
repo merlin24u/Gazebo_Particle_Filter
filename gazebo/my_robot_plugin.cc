@@ -26,8 +26,8 @@ namespace gazebo
     /// \brief Pointer to the model.
     physics::ModelPtr model;
 
-    /// \brief Pointer to the joint.
-    vector<physics::JointPtr> joint;
+    /// \brief Vector to the joints.
+    // vector<physics::JointPtr> joint;
     
     /// \brief A node use for ROS transport
     unique_ptr<ros::NodeHandle> rosNode;
@@ -60,7 +60,7 @@ namespace gazebo
       // Store the model pointer for convenience.
       this->model = _model;
 
-      this->joint = vector<physics::JointPtr>(begin(_model->GetJoints()), end(_model->GetJoints()));
+      // this->joint = vector<physics::JointPtr>(begin(_model->GetJoints()), end(_model->GetJoints()));
 
       // Init PID
       /*
@@ -128,6 +128,7 @@ namespace gazebo
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
 
+      // Use PID
       /*
       this->model->GetJointController()->SetVelocityTarget(this->joint[0]->GetScopedName(), _x);
       this->model->GetJointController()->SetVelocityTarget(this->joint[1]->GetScopedName(), _y);

@@ -24,7 +24,7 @@ public :
   void joy_to_twist(const sensor_msgs::Joy &joy){
     geometry_msgs::Twist tw;
     tw.linear.x = 0.15*joy.axes[1];
-    tw.angular.z = 2.*joy.axes[0];
+    tw.angular.z = 1.5*joy.axes[0];
     cmd_pub.publish(tw);
   }
 
@@ -41,7 +41,11 @@ public :
 
     int r = cv_ptr->image.rows;
     int c = cv_ptr->image.cols;
-    ROS_INFO("%f", (float)cv_ptr->image.at<uchar>(r/2, c/2));
+
+    float depth =  cv_ptr->image.at<float>(r/2, c/2);
+
+    if(!std::isnan(depth))
+      ROS_INFO("%f", depth);
   }
 };
   

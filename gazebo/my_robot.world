@@ -187,8 +187,8 @@
             <depthImageCameraInfoTopicName>/camera/depth/camera_info</depthImageCameraInfoTopicName>
             <pointCloudTopicName>/camera/depth/points</pointCloudTopicName>
             <frameName>camera_link</frameName>
-            <pointCloudCutoff>0.5</pointCloudCutoff>
-            <pointCloudCutoffMax>3.0</pointCloudCutoffMax>
+            <pointCloudCutoff>0.1</pointCloudCutoff>
+            <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
             <distortionK1>0</distortionK1>
             <distortionK2>0</distortionK2>
             <distortionK3>0</distortionK3>
@@ -229,7 +229,7 @@
         </axis>
       </joint>
       <plugin name='control' filename='libmy_robot_plugin.so'>
-	<velocity>5</velocity>
+	<velocity>15</velocity>
       </plugin>
     </model>
   </world>
