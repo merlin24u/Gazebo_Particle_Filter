@@ -10,5 +10,5 @@
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
   </include>
-  <node name="main" pkg="my_robot" type="main"/>
+  <node name="main" pkg="my_robot" type="main" output="screen"/>
 </launch>

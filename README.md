@@ -29,6 +29,12 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:~/catkin_ws/src/my_robot/gazebo/build
 gazebo -s libgazebo_ros_api_plugin.so my_robot.world
 ```
 
+or
+
+```
+roslaunch my_robot my_robot.launch
+```
+
 * Build ROS part (inside catkin_ws)
 
 ```
@@ -39,6 +45,11 @@ catkin_make
 
 ```
 roscore
+```
+
+and without using `roslaunch`
+
+```
 rosparam set joy_node/dev "/dev/input/js0"
 rosrun joy joy_node
 rosrun my_robot main
