@@ -3,7 +3,7 @@
   <node name="joy_node" pkg="joy" type="joy_node"/>
    <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find my_robot)/gazebo/my_robot.world"/>
+    <arg name="world_name" value="$(find my_robot)/gazebo/my_robot.world -s $(find my_robot)/gazebo/build/libmy_robot_plugin.so"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
