@@ -125,6 +125,8 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS}
 )
+link_directories(${GAZEBO_LIBRARY_DIRS})
+list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -214,3 +216,7 @@ include_directories(
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES})
 # add_dependencies(main my_robot_generate_messages_cpp)
+
+add_executable(cloneWorld src/cloneWorld.cpp)
+target_link_libraries(cloneWorld ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+# add_dependencies(cloneWorld my_robot_generate_messages_cpp)
