@@ -14,11 +14,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   message_generation
+  gazebo_ros
 )
+
+# Depend on system install of Gazebo
+find_package(gazebo REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -71,10 +74,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   geometry_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,7 +112,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot
    CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs sensor_msgs
-#  DEPENDS system_lib
+   DEPENDS gazebo_ros # system_lib
 )
 
 ###########
@@ -120,7 +123,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -210,4 +213,4 @@ include_directories(
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES})
-add_dependencies(main my_robot_generate_messages_cpp)
+# add_dependencies(main my_robot_generate_messages_cpp)
