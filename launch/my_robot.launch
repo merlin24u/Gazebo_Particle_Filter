@@ -10,5 +10,10 @@
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
   </include>
+  <!--
+  <node name="cloneWorld" pkg="my_robot" type="cloneWorld" output="screen"/>
+  <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
+  <node name="gzclient" pkg="gazebo_ros" type="gzclient"/>
+  -->
   <node name="main" pkg="my_robot" type="main" output="screen"/>
 </launch>
