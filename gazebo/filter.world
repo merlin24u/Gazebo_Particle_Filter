@@ -244,6 +244,11 @@
           <xyz>0 0 1</xyz>
         </axis>
       </joint>
+
+      <plugin name='control_filter' filename='libfilter_plugin.so'>
+	<velocity>15</velocity>
+	<nb_particles>1</nb_particles>
+      </plugin>
     </model>
   </world>
 </sdf>

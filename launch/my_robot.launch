@@ -11,11 +11,11 @@
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
   </include>
-  <node name="main" pkg="my_robot" type="main" output="screen"/>
+  <node name="main" pkg="my_robot" type="main"/>
   <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
   <include file="$(find my_robot)/launch/empty_world.launch">
     <arg name="node_name" value="gazebo_filter"/>
-    <arg name="world_name" value="$(find my_robot)/gazebo/simulation.world"/>
+    <arg name="world_name" value="$(find my_robot)/gazebo/filter.world  -s $(find my_robot)/gazebo/build/libfilter_plugin.so"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>

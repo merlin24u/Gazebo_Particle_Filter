@@ -14,7 +14,10 @@ include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
-# Build our plugin
+# Build our plugins
 add_library(my_robot_plugin SHARED my_robot_plugin.cc)
 target_link_libraries(my_robot_plugin ${GAZEBO_LIBRARIES} ${roscpp_LIBRARIES})
+
+add_library(filter_plugin SHARED filter_plugin.cc)
+target_link_libraries(filter_plugin ${GAZEBO_LIBRARIES} ${roscpp_LIBRARIES})
 
