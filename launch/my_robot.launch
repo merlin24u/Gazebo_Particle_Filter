@@ -10,6 +10,7 @@
     <arg name="gui" value="true"/>
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
+    <arg name="verbose" value="false"/>
   </include>
   <node name="main" pkg="my_robot" type="main"/>
   <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
@@ -21,5 +22,6 @@
     <arg name="gui" value="true"/>
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
+    <arg name="verbose" value="false"/>
   </include>
 </launch>

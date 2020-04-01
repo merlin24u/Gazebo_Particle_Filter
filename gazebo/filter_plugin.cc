@@ -15,6 +15,7 @@
 using namespace std;
 
 const int BASE_WIDTH = 200; // millimeters
+const int WHEEL_RADIUS = 100; // millimeters
 const float MAX_WIDTH = 5.; // limit map in meter
 const float MAX_HEIGHT = 3.25; // limit map in meter
 int MAX_SPEED = 10; // radian/s default
@@ -23,7 +24,8 @@ float SIZE_ROBOT = 0.4; // max size of robot in meters
 
 struct Particle{
   float posX, posY, angle, density; // coordinates and orientation of a particle
-  Particle(float x, float y, float alpha, float prob) : posX(x), posY(y), angle(alpha), density(prob) {} 
+  gazebo::common::Time stamp;
+  Particle(float x, float y, float alpha, float prob, gazebo::common::Time t) : posX(x), posY(y), angle(alpha), density(prob), stamp(t) {} 
 };
 
 namespace gazebo
@@ -69,7 +71,7 @@ namespace gazebo
 	cerr << "Invalid joint count, Filter plugin not loaded\n";
 	return;
       }
-
+      
       // Store the model pointer for convenience.
       this->model = _model;
 
@@ -90,13 +92,14 @@ namespace gazebo
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
+      gazebo::common::Time stamp = this->world->SimTime();
 
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
 	float posY = distribution_height(generator);
 	float angle = distribution_angle(generator);
 	
-	Particle p(posX, posY, angle, 1.);
+	Particle p(posX, posY, angle, 1., stamp);
 	particles.push_back(p);
       }
 
@@ -141,26 +144,31 @@ namespace gazebo
 	th = th * MAX_SPEED / k;
       }
 
-      for(int i = 0; i < N; i++)
-	this->SetVelocity(i, x - th, x + th);
+      if((x - th) != 0 || (x + th) != 0)
+	for(int i = 0; i < N; i++)
+	  this->SetVelocity(i, x - th, x + th);
     }
 
     /// \brief Set the velocity of the Filter
     /// \param[in] p particle
-    /// \param[in] _x New target velocity
-    /// \param[in] _y New target velocity
-    void SetVelocity(const int &p, const double &_x, const double &_y)
+    /// \param[in] r New right target velocity
+    /// \param[in] l New left target velocity
+    void SetVelocity(const int &p, const double &l, const double &r)
     {
+      gazebo::common::Time now = this->world->SimTime();
+      float dt = (now - particles[p].stamp).Float() * 1000; // in ms
+      particles[p].stamp = now;
+      
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
 
       this->world->SetPaused(false);
       
       // Set the joint's target velocity.
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
+      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
+      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
 
-      gazebo::common::Time::MSleep(500);
+      gazebo::common::Time::MSleep(round(dt));
 
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();

@@ -37,10 +37,10 @@
 
   <!-- start gazebo server-->
   <group if="$(arg use_clock_frequency)">
-    <param name="gazebo/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
+    <param name="$(arg node_name)/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
   </group>
   <group>
-    <param name="gazebo/enable_ros_network" value="$(arg enable_ros_network)" />
+    <param name="$(arg node_name)/enable_ros_network" value="$(arg enable_ros_network)" />
   </group>
   <node name="$(arg node_name)" pkg="gazebo_ros" type="$(arg script_type)" respawn="$(arg respawn_gazebo)" output="$(arg output)"
 	args="$(arg command_arg1) $(arg command_arg2) $(arg command_arg3) -e $(arg physics) $(arg extra_gazebo_args) $(arg world_name)" />

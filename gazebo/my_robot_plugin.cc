@@ -25,9 +25,6 @@ namespace gazebo
   private:
     /// \brief Pointer to the model.
     physics::ModelPtr model;
-
-    /// \brief Vector to the joints.
-    // vector<physics::JointPtr> joint;
     
     /// \brief A node use for ROS transport
     unique_ptr<ros::NodeHandle> rosNode;
@@ -59,15 +56,6 @@ namespace gazebo
 
       // Store the model pointer for convenience.
       this->model = _model;
-
-      // this->joint = vector<physics::JointPtr>(begin(_model->GetJoints()), end(_model->GetJoints()));
-
-      // Init PID
-      /*
-	common::PID pid(0.1, 0, 0);
-	this->model->GetJointController()->SetVelocityPID(this->joint[0]->GetScopedName(), pid);
-	this->model->GetJointController()->SetVelocityPID(this->joint[0]->GetScopedName(), pid);
-      */
 
       // Check that the velocity element exists, then read the value
       if (_sdf->HasElement("velocity"))
@@ -118,21 +106,13 @@ namespace gazebo
     }
 
     /// \brief Set the velocity of the MyRobot
-    /// \param[in] _x New target velocity
-    /// \param[in] _y New target velocity
-    void SetVelocity(const double &_x, const double &_y)
+    /// \param[in] l New left target velocity
+    /// \param[in] r New right target velocity
+    void SetVelocity(const double &l, const double &r)
     {
-      // cout << "right : " << _x << ", left : " << _y << endl;
-
       // Set the joint's target velocity.
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
-
-      // Use PID
-      /*
-      this->model->GetJointController()->SetVelocityTarget(this->joint[0]->GetScopedName(), _x);
-      this->model->GetJointController()->SetVelocityTarget(this->joint[1]->GetScopedName(), _y);
-      */
+      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
+      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
     }
 
   private:
