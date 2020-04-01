@@ -16,7 +16,7 @@
   <include file="$(find my_robot)/launch/empty_world.launch">
     <arg name="node_name" value="gazebo_filter"/>
     <arg name="world_name" value="$(find my_robot)/gazebo/filter.world  -s $(find my_robot)/gazebo/build/libfilter_plugin.so"/>
-    <arg name="paused" value="false"/>
+    <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
     <arg name="recording" value="false"/>

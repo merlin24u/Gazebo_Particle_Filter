@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-  <world name="default">
+  <world name="filter_world">
     <!-- A global light source -->
     <include>
       <uri>model://sun</uri>
@@ -247,7 +247,8 @@
 
       <plugin name='control_filter' filename='libfilter_plugin.so'>
 	<velocity>15</velocity>
-	<nb_particles>1</nb_particles>
+	<nb_particles>5</nb_particles>
+	<size_robot>0.4</size_robot>
       </plugin>
     </model>
   </world>

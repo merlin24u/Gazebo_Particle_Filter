@@ -19,6 +19,7 @@ const float MAX_WIDTH = 5.; // limit map in meter
 const float MAX_HEIGHT = 3.25; // limit map in meter
 int MAX_SPEED = 10; // radian/s default
 int N = 10; // number of particles used
+float SIZE_ROBOT = 0.4; // max size of robot in meters
 
 struct Particle{
   float posX, posY, angle, density; // coordinates and orientation of a particle
@@ -34,6 +35,9 @@ namespace gazebo
   private:
     /// \brief Pointer to the model.
     physics::ModelPtr model;
+
+    /// \brief Pointer to the world.
+    physics::WorldPtr world;
 
     /// \brief An array of particles
     vector<Particle> particles;
@@ -69,24 +73,29 @@ namespace gazebo
       // Store the model pointer for convenience.
       this->model = _model;
 
-      // Check that the velocity and nb_particles elements exist, then read the values
+      // Store the model pointer for convenience.
+      this->world = this->model->GetWorld();
+
+      // Check that sdf elements exist, then read the values
       if (_sdf->HasElement("velocity"))
 	MAX_SPEED = _sdf->Get<double>("velocity");
       if (_sdf->HasElement("nb_particles"))
 	N = _sdf->Get<double>("nb_particles");
+      if (_sdf->HasElement("size_robot"))
+	SIZE_ROBOT= _sdf->Get<double>("size_robot");
 
       // Random initialization of N particles
       random_device rd;
       default_random_engine generator(rd());
-      uniform_real_distribution<float> distribution_width(-MAX_WIDTH, MAX_WIDTH);
-      uniform_real_distribution<float> distribution_height(-MAX_HEIGHT, MAX_HEIGHT);
+      uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
+      uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
 
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
 	float posY = distribution_height(generator);
 	float angle = distribution_angle(generator);
-	cout << posX << " " << posY << " " << angle << endl;
+	
 	Particle p(posX, posY, angle, 1.);
 	particles.push_back(p);
       }
@@ -143,12 +152,16 @@ namespace gazebo
     /// \param[in] _y New target velocity
     void SetVelocity(const int &p, const double &_x, const double &_y)
     {
-      ignition::math::Pose3<double> initPose(ignition::math::Vector3<double>(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaternion<double>(0., 0., particles[p].angle));
+      ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
+
+      this->world->SetPaused(false);
       
       // Set the joint's target velocity.
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
+
+      gazebo::common::Time::MSleep(1000);
 
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
@@ -156,7 +169,8 @@ namespace gazebo
       particles[p].posX = pose.X();
       particles[p].posY = pose.Y();
       particles[p].angle = rot.Yaw();
-      cout << particles[p].posX << " " << particles[p].posY << " " << particles[p].angle << endl;
+
+      world->SetPaused(true);
     }
 
   private:
