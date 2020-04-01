@@ -88,8 +88,8 @@ namespace gazebo
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
-							 "/" + this->model->GetName() + "/vel_cmd",
-							 1,
+							 "/my_robot/vel_cmd",
+							 100,
 							 boost::bind(&MyRobotPlugin::OnRosMsg, this, _1),
 							 ros::VoidPtr(), &this->rosQueue);
       this->rosSub = this->rosNode->subscribe(so);

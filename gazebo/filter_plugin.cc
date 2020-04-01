@@ -116,7 +116,7 @@ namespace gazebo
       ros::SubscribeOptions so =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
 							    "/my_robot/vel_cmd",
-							    1,
+							    100,
 							    boost::bind(&FilterPlugin::OnRosMsg, this, _1),
 							    ros::VoidPtr(), &this->rosQueue);
       this->rosSub = this->rosNode->subscribe(so);
@@ -131,19 +131,18 @@ namespace gazebo
     /// of the Filter.
     void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
     {
-      for(int i = 0; i < N; i++){
-	float x = -data->linear.x * 1000.0; // from meters to millimeters
-	float th = data->angular.z * (BASE_WIDTH/2); // in mm
-	float k = max(abs(x - th), abs(x + th));
+      float x = -data->linear.x * 1000.0; // from meters to millimeters
+      float th = data->angular.z * (BASE_WIDTH/2); // in mm
+      float k = max(abs(x - th), abs(x + th));
       
-	// sending commands higher than max speed will fail
-	if (k > MAX_SPEED){
-	  x = x * MAX_SPEED / k;
-	  th = th * MAX_SPEED / k;
-	}
-      
-	this->SetVelocity(i, x - th, x + th);
+      // sending commands higher than max speed will fail
+      if (k > MAX_SPEED){
+	x = x * MAX_SPEED / k;
+	th = th * MAX_SPEED / k;
       }
+
+      for(int i = 0; i < N; i++)
+	this->SetVelocity(i, x - th, x + th);
     }
 
     /// \brief Set the velocity of the Filter
@@ -161,7 +160,7 @@ namespace gazebo
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, _x);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, _y);
 
-      gazebo::common::Time::MSleep(1000);
+      gazebo::common::Time::MSleep(500);
 
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
