@@ -3,24 +3,25 @@
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <ros/ros.h>
+#include <ros/callback_queue.h>
+#include <ros/subscribe_options.h>
+#include <geometry_msgs/Twist.h>
+#include <std_msgs/Float32.h>
 #include <thread>
 #include <vector>
 #include <math.h>
 #include <random>
-#include "ros/ros.h"
-#include "ros/callback_queue.h"
-#include "ros/subscribe_options.h"
-#include "geometry_msgs/Twist.h"
 
 using namespace std;
 
-const int BASE_WIDTH = 200; // millimeters
-const int WHEEL_RADIUS = 100; // millimeters
-const float MAX_WIDTH = 5.; // limit map in meter
-const float MAX_HEIGHT = 3.25; // limit map in meter
+const int BASE_WIDTH = 200; // in millimeters
+const int WHEEL_RADIUS = 0.1; // in meters
+const float MAX_WIDTH = 5.; // limit map in meters
+const float MAX_HEIGHT = 3.25; // limit map in meters
 int MAX_SPEED = 10; // radian/s default
 int N = 10; // number of particles used
-float SIZE_ROBOT = 0.4; // max size of robot in meters
+float SIZE_ROBOT = 0.4; // size max of robot in meters
 
 struct Particle{
   float posX, posY, angle, density; // coordinates and orientation of a particle
@@ -47,8 +48,11 @@ namespace gazebo
     /// \brief A node use for ROS transport
     unique_ptr<ros::NodeHandle> rosNode;
 
-    /// \brief A ROS subscriber
-    ros::Subscriber rosSub;
+    /// \brief A ROS subscriber for cmd_vel topic
+    ros::Subscriber rosSub_cmd;
+
+    /// \brief A ROS subscriber for camera_depth topic
+    ros::Subscriber rosSub_cam;
 
     /// \brief A ROS callbackqueue that helps process messages
     ros::CallbackQueue rosQueue;
@@ -92,7 +96,7 @@ namespace gazebo
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
-      gazebo::common::Time stamp = this->world->SimTime();
+      gazebo::common::Time stamp = gazebo::common::Time::GetWallTime();
 
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
@@ -107,7 +111,7 @@ namespace gazebo
       if(!ros::isInitialized()){
 	int argc = 0;
 	char **argv = NULL;
-	ros::init(argc, argv, "gazebo_filter_client",
+	ros::init(argc, argv, "gazebo",
 		  ros::init_options::NoSigintHandler);
       }
 
@@ -116,23 +120,34 @@ namespace gazebo
       this->rosNode.reset(new ros::NodeHandle("gazebo_filter_client"));
 
       // Create a named topic, and subscribe to it.
-      ros::SubscribeOptions so =
+      ros::SubscribeOptions so_cmd =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
 							    "/my_robot/vel_cmd",
 							    100,
-							    boost::bind(&FilterPlugin::OnRosMsg, this, _1),
+							    boost::bind(&FilterPlugin::on_cmd, this, _1),
 							    ros::VoidPtr(), &this->rosQueue);
-      this->rosSub = this->rosNode->subscribe(so);
 
+      this->rosSub_cmd = this->rosNode->subscribe(so_cmd);
+
+      // Create a named topic, and subscribe to it.
+      ros::SubscribeOptions so_cam =
+	ros::SubscribeOptions::create<std_msgs::Float32>(
+							 "/my_robot/camera",
+							 100,
+							 boost::bind(&FilterPlugin::on_camera, this, _1),
+							 ros::VoidPtr(), &this->rosQueue);
+      
+      this->rosSub_cam = this->rosNode->subscribe(so_cam);
+      
       // Spin up the queue helper thread.
       this->rosQueueThread =
 	thread(bind(&FilterPlugin::QueueThread, this));
     }
 
-    /// \brief Handle an incoming message from ROS
+    /// \brief Handle an incoming message from ROS cmd_vel
     /// \param[in] data Joy inputs that is used to set the velocity
-    /// of the Filter.
-    void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
+    /// of all particles.
+    void on_cmd(const geometry_msgs::TwistConstPtr &data)
     {
       float x = -data->linear.x * 1000.0; // from meters to millimeters
       float th = data->angular.z * (BASE_WIDTH/2); // in mm
@@ -144,40 +159,42 @@ namespace gazebo
 	th = th * MAX_SPEED / k;
       }
 
-      if((x - th) != 0 || (x + th) != 0)
-	for(int i = 0; i < N; i++)
-	  this->SetVelocity(i, x - th, x + th);
+      gazebo::common::Time now = gazebo::common::Time::GetWallTime();
+      for(int i = 0; i < N; i++)
+	setPose(i, now, x - th, x + th);
     }
 
-    /// \brief Set the velocity of the Filter
-    /// \param[in] p particle
-    /// \param[in] r New right target velocity
-    /// \param[in] l New left target velocity
-    void SetVelocity(const int &p, const double &l, const double &r)
+    /// \brief Handle an incoming message from ROS camera_depth
+    /// \param[in] msg ROS camera_depth data
+    void on_camera(const std_msgs::Float32ConstPtr &msg)
     {
-      gazebo::common::Time now = this->world->SimTime();
-      float dt = (now - particles[p].stamp).Float() * 1000; // in ms
-      particles[p].stamp = now;
+      // cout << msg->data << endl;
+    }
+
+    /// \brief Set the new pose of a particle
+    /// \param[in] t Time cmd_vel msg has been sent 
+    /// \param[in] p Particle
+    /// \param[in] r Right target velocity
+    /// \param[in] l Left target velocity
+    void setPose(const int &p, const gazebo::common::Time &t, const double &l, const double &r)
+    {
+      float dt = (t - particles[p].stamp).Float() * 1000; // in ms
+      particles[p].stamp = gazebo::common::Time::GetWallTime();
       
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
 
-      this->world->SetPaused(false);
-      
-      // Set the joint's target velocity.
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
 
-      gazebo::common::Time::MSleep(round(dt));
-
+      this->world->Step(30);
+      
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
       auto rot = model_pose.Rot();
       particles[p].posX = pose.X();
       particles[p].posY = pose.Y();
       particles[p].angle = rot.Yaw();
-
-      world->SetPaused(true);
     }
 
   private:
@@ -185,10 +202,9 @@ namespace gazebo
     void QueueThread()
     {
       static const double timeout = 0.01;
-      while (this->rosNode->ok())
-	{
-	  this->rosQueue.callAvailable(ros::WallDuration(timeout));
-	}
+      while(this->rosNode->ok()){
+	this->rosQueue.callAvailable(ros::WallDuration(timeout));
+      }
     }
   };
 

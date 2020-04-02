@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 # ROS
 find_package(roscpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 include_directories(${roscpp_INCLUDE_DIRS})
 include_directories(${geometry_msgs_INCLUDE_DIRS})
+include_directories(${std_msgs_INCLUDE_DIRS})
 include_directories(${sensor_msgs_INCLUDE_DIRS})
 
 # Find Gazebo

@@ -11,6 +11,7 @@
 ```
 source /usr/share/gazebo/setup.sh
 export GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:~/catkin_ws/src/my_robot/models
+export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:~/catkin_ws/src/my_robot/gazebo/build
 ```
 
 * Build Gazebo part (inside `/gazebo`)

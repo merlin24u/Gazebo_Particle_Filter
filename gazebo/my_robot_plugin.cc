@@ -3,13 +3,13 @@
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#include <ros/ros.h>
+#include <ros/callback_queue.h>
+#include <ros/subscribe_options.h>
+#include <geometry_msgs/Twist.h>
 #include <thread>
 #include <vector>
 #include <math.h>
-#include "ros/ros.h"
-#include "ros/callback_queue.h"
-#include "ros/subscribe_options.h"
-#include "geometry_msgs/Twist.h"
 
 using namespace std;
 
@@ -63,11 +63,11 @@ namespace gazebo
 
       // Initialize ros, if it has not already bee initialized.
       if(!ros::isInitialized()){
-	  int argc = 0;
-	  char **argv = NULL;
-	  ros::init(argc, argv, "gazebo_client",
-		    ros::init_options::NoSigintHandler);
-	}
+	int argc = 0;
+	char **argv = NULL;
+	ros::init(argc, argv, "gazebo",
+		  ros::init_options::NoSigintHandler);
+      }
 
       // Create our ROS node. This acts in a similar manner to
       // the Gazebo node
@@ -76,10 +76,10 @@ namespace gazebo
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
-							 "/my_robot/vel_cmd",
-							 100,
-							 boost::bind(&MyRobotPlugin::OnRosMsg, this, _1),
-							 ros::VoidPtr(), &this->rosQueue);
+							    "/my_robot/vel_cmd",
+							    100,
+							    boost::bind(&MyRobotPlugin::OnRosMsg, this, _1),
+							    ros::VoidPtr(), &this->rosQueue);
       this->rosSub = this->rosNode->subscribe(so);
 
       // Spin up the queue helper thread.
@@ -110,7 +110,6 @@ namespace gazebo
     /// \param[in] r New right target velocity
     void SetVelocity(const double &l, const double &r)
     {
-      // Set the joint's target velocity.
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
     }

@@ -4,7 +4,7 @@
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find my_robot)/launch/empty_world.launch">
     <arg name="node_name" value="gazebo_moving_robot"/>
-    <arg name="world_name" value="$(find my_robot)/gazebo/my_robot.world -s $(find my_robot)/gazebo/build/libmy_robot_plugin.so"/>
+    <arg name="world_name" value="$(find my_robot)/gazebo/my_robot.world"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
@@ -16,7 +16,7 @@
   <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
   <include file="$(find my_robot)/launch/empty_world.launch">
     <arg name="node_name" value="gazebo_filter"/>
-    <arg name="world_name" value="$(find my_robot)/gazebo/filter.world  -s $(find my_robot)/gazebo/build/libfilter_plugin.so"/>
+    <arg name="world_name" value="$(find my_robot)/gazebo/filter.world"/>
     <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>

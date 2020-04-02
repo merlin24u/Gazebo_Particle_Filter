@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   cv_bridge
   image_transport
+  std_msgs
   geometry_msgs
   sensor_msgs
   message_generation
@@ -111,7 +112,7 @@ find_package(gazebo REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot
-   CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs sensor_msgs
+   CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs std_msgs sensor_msgs
    DEPENDS gazebo_ros # system_lib
 )
 
