@@ -17,16 +17,21 @@ using namespace std;
 
 const int BASE_WIDTH = 200; // in millimeters
 const int WHEEL_RADIUS = 0.1; // in meters
-const float MAX_WIDTH = 5.; // limit map in meters
-const float MAX_HEIGHT = 3.25; // limit map in meters
-int MAX_SPEED = 10; // radian/s default
-int N = 10; // number of particles used
-float SIZE_ROBOT = 0.4; // size max of robot in meters
+const float MAX_WIDTH = 5.0; // width limit of map in meters
+const float MAX_HEIGHT = 3.25; // height limit of map in meters
+int MAX_SPEED = 10; // speed in radian/s of wheels by default
+int N = 10; // number of particles used by default
+float SIZE_ROBOT = 0.4; // size max of robot in meters by default
+volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
   float posX, posY, angle, density; // coordinates and orientation of a particle
+  float obs; // camera_depth information
   gazebo::common::Time stamp;
-  Particle(float x, float y, float alpha, float prob, gazebo::common::Time t) : posX(x), posY(y), angle(alpha), density(prob), stamp(t) {} 
+  Particle(float x, float y, float alpha, gazebo::common::Time t) : posX(x), posY(y), angle(alpha), stamp(t) {
+    obs = 0.0;
+    density = 1.0;
+  } 
 };
 
 namespace gazebo
@@ -54,11 +59,20 @@ namespace gazebo
     /// \brief A ROS subscriber for camera_depth topic
     ros::Subscriber rosSub_cam;
 
-    /// \brief A ROS callbackqueue that helps process messages
+    /// \brief A ROS subscriber for camera_depth topic of particles
+    ros::Subscriber rosSub_cam_filter;
+
+    /// \brief A ROS callbackqueue that helps process messages concerning cmd_vel info
     ros::CallbackQueue rosQueue;
 
-    /// \brief A thread the keeps running the rosQueue
+    /// \brief A thread the keeps running the rosQueue concerning cmd_vel info
     thread rosQueueThread;
+
+    /// \brief A ROS callbackqueue that helps process messages concerning camera info
+    ros::CallbackQueue rosQueue_cam;
+
+    /// \brief A thread the keeps running the rosQueue concerning camera info
+    thread rosQueueThread_cam;
   
   public:
     /// \brief Constructor
@@ -79,7 +93,7 @@ namespace gazebo
       // Store the model pointer for convenience.
       this->model = _model;
 
-      // Store the model pointer for convenience.
+      // Store the world pointer for convenience.
       this->world = this->model->GetWorld();
 
       // Check that sdf elements exist, then read the values
@@ -103,7 +117,7 @@ namespace gazebo
 	float posY = distribution_height(generator);
 	float angle = distribution_angle(generator);
 	
-	Particle p(posX, posY, angle, 1., stamp);
+	Particle p(posX, posY, angle, stamp);
 	particles.push_back(p);
       }
 
@@ -123,7 +137,7 @@ namespace gazebo
       ros::SubscribeOptions so_cmd =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
 							    "/my_robot/vel_cmd",
-							    100,
+							    1,
 							    boost::bind(&FilterPlugin::on_cmd, this, _1),
 							    ros::VoidPtr(), &this->rosQueue);
 
@@ -135,13 +149,27 @@ namespace gazebo
 							 "/my_robot/camera",
 							 100,
 							 boost::bind(&FilterPlugin::on_camera, this, _1),
-							 ros::VoidPtr(), &this->rosQueue);
+							 ros::VoidPtr(), &this->rosQueue_cam);
       
       this->rosSub_cam = this->rosNode->subscribe(so_cam);
+
+      // Create a named topic, and subscribe to it.
+      ros::SubscribeOptions so_cam_filter =
+	ros::SubscribeOptions::create<std_msgs::Float32>(
+							 "/filter/camera",
+							 100,
+							 boost::bind(&FilterPlugin::on_camera_filter, this, _1),
+							 ros::VoidPtr(), &this->rosQueue_cam);
       
+      this->rosSub_cam_filter = this->rosNode->subscribe(so_cam_filter);
+
       // Spin up the queue helper thread.
       this->rosQueueThread =
 	thread(bind(&FilterPlugin::QueueThread, this));
+
+      // Spin up the queue helper thread.
+      this->rosQueueThread_cam =
+	thread(bind(&FilterPlugin::QueueThread_cam, this));
     }
 
     /// \brief Handle an incoming message from ROS cmd_vel
@@ -149,8 +177,8 @@ namespace gazebo
     /// of all particles.
     void on_cmd(const geometry_msgs::TwistConstPtr &data)
     {
-      float x = -data->linear.x * 1000.0; // from meters to millimeters
-      float th = data->angular.z * (BASE_WIDTH/2); // in mm
+      float x = -data->linear.x * 1000.0; // in millimeters
+      float th = data->angular.z * (BASE_WIDTH/2);
       float k = max(abs(x - th), abs(x + th));
       
       // sending commands higher than max speed will fail
@@ -169,6 +197,17 @@ namespace gazebo
     void on_camera(const std_msgs::Float32ConstPtr &msg)
     {
       // cout << msg->data << endl;
+      for(int i = 0; i < N; i++)
+	cout << particles[i].obs << " ";
+      cout << endl;
+    }
+
+    /// \brief Handle an incoming message from ROS camera_depth particle
+    /// \param[in] msg ROS camera_depth data
+    void on_camera_filter(const std_msgs::Float32ConstPtr &msg)
+    {
+      // cout << P << endl;
+      particles[P].obs = msg->data;
     }
 
     /// \brief Set the new pose of a particle
@@ -178,6 +217,7 @@ namespace gazebo
     /// \param[in] l Left target velocity
     void setPose(const int &p, const gazebo::common::Time &t, const double &l, const double &r)
     {
+      P = p; // set the current particle in simulation
       float dt = (t - particles[p].stamp).Float() * 1000; // in ms
       particles[p].stamp = gazebo::common::Time::GetWallTime();
       
@@ -187,7 +227,7 @@ namespace gazebo
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
 
-      this->world->Step(30);
+      this->world->Step(500); // nb of iterations
       
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
@@ -204,6 +244,15 @@ namespace gazebo
       static const double timeout = 0.01;
       while(this->rosNode->ok()){
 	this->rosQueue.callAvailable(ros::WallDuration(timeout));
+      }
+    }
+
+    /// \brief ROS helper function that processes messages
+    void QueueThread_cam()
+    {
+      static const double timeout = 0.01;
+      while(this->rosNode->ok()){
+	this->rosQueue_cam.callAvailable(ros::WallDuration(timeout));
       }
     }
   };
