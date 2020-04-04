@@ -189,10 +189,8 @@ namespace gazebo
     /// \param[in] msg ROS camera_depth data
     void on_camera(const std_msgs::Float32ConstPtr &msg)
     {
-      // cout << msg->data << endl;
       for(int i = 0; i < N; i++)
-	cout << particles[i].obs << " ";
-      cout << endl;
+	particles[i].density *= fctObservation(msg->data, particles[i].obs);
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
@@ -228,6 +226,16 @@ namespace gazebo
       particles[p].posX = pose.X();
       particles[p].posY = pose.Y();
       particles[p].angle = rot.Yaw();
+    }
+
+    float fctObservation(float obs, float obs_p){
+      if (obs == V_MIN)
+	return cdf(0.5, obs_p, STD_DEV);
+      if (obs == V_MAX)
+	return 1 - cdf(obs - 0.5, obs_p, STD_DEV);
+      if (obs > V_MIN && obs < V_MAX)
+	return pdf(obs, obs_p, STD_DEV);
+      return 0.0;
     }
 
     // Cumulative distribution function of normal distribution
