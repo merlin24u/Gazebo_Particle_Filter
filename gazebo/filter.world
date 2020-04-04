@@ -248,7 +248,6 @@
       <plugin name='control_filter' filename='libfilter_plugin.so'>
 	<velocity>15</velocity>
 	<nb_particles>2</nb_particles>
-	<size_robot>0.4</size_robot>
       </plugin>
     </model>
   </world>

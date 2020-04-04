@@ -21,6 +21,9 @@ find_package(catkin REQUIRED COMPONENTS
 # Depend on system install of Gazebo
 find_package(gazebo REQUIRED)
 
+# Depend on system install openCV
+find_package(OpenCV REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -213,5 +216,5 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(main src/main.cpp)
-target_link_libraries(main ${catkin_LIBRARIES})
+target_link_libraries(main ${catkin_LIBRARIES} ${OpenCV_LIBS})
 # add_dependencies(main my_robot_generate_messages_cpp)

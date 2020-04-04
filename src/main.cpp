@@ -5,6 +5,8 @@
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/Twist.h>
+#include <opencv2/core/mat.hpp>
+#include "desc_robot.hpp"
 
 class MyRobot {
 private :
@@ -68,10 +70,16 @@ public :
       return -1;
     }
 
-    int r = cv_ptr->image.rows;
-    int c = cv_ptr->image.cols;
+    cv::Mat depth_img = cv_ptr->image;
+    cv::Mat noise = cv::Mat(depth_img.size(), CV_32F);
+    cv::randn(noise, MEAN, STD_DEV);
+    depth_img += noise;
+    cv::normalize(depth_img, depth_img, V_MIN, V_MAX, CV_MINMAX, CV_32F);
+    
+    int r = depth_img.rows;
+    int c = depth_img.cols;
 
-    float depth = cv_ptr->image.at<float>(r/2, c/2);
+    float depth = depth_img.at<float>(r/2, c/2);
 
     if(!std::isnan(depth))
       return depth;

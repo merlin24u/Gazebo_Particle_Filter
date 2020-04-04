@@ -12,16 +12,11 @@
 #include <vector>
 #include <math.h>
 #include <random>
+#include "../src/desc_robot.hpp"
 
 using namespace std;
 
-const int BASE_WIDTH = 200; // in millimeters
-const int WHEEL_RADIUS = 0.1; // in meters
-const float MAX_WIDTH = 5.0; // width limit of map in meters
-const float MAX_HEIGHT = 3.25; // height limit of map in meters
-int MAX_SPEED = 10; // speed in radian/s of wheels by default
 int N = 10; // number of particles used by default
-float SIZE_ROBOT = 0.4; // size max of robot in meters by default
 volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
@@ -101,8 +96,6 @@ namespace gazebo
 	MAX_SPEED = _sdf->Get<double>("velocity");
       if (_sdf->HasElement("nb_particles"))
 	N = _sdf->Get<double>("nb_particles");
-      if (_sdf->HasElement("size_robot"))
-	SIZE_ROBOT= _sdf->Get<double>("size_robot");
 
       // Random initialization of N particles
       random_device rd;
@@ -235,6 +228,16 @@ namespace gazebo
       particles[p].posX = pose.X();
       particles[p].posY = pose.Y();
       particles[p].angle = rot.Yaw();
+    }
+
+    // Cumulative distribution function of normal distribution
+    float cdf(float x, float mean, float std_dev){
+      return 0.5 * erfc(-(x - mean) / (std_dev * sqrt(2)));
+    }
+
+    // Probability density function of normal distribution
+    float pdf(float x, float mean, float std_dev){
+      return 1 / (std_dev * sqrt(2*M_PI)) * exp(-pow(x - mean, 2) / (2 * pow(std_dev, 2)));
     }
 
   private:
