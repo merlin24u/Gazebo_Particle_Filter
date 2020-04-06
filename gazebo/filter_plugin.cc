@@ -189,15 +189,19 @@ namespace gazebo
     /// \param[in] msg ROS camera_depth data
     void on_camera(const std_msgs::Float32ConstPtr &msg)
     {
-      for(int i = 0; i < N; i++)
+      cout << "obs : " << msg->data << endl;
+      for(int i = 0; i < N; i++){
+	cout << "obs_" << i << " : " << particles[i].obs << endl;
 	particles[i].density *= fctObservation(msg->data, particles[i].obs);
+	cout << "Particle " << i << " : " << particles[i].density << endl; 
+      }
+      cout << endl;
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
     /// \param[in] msg ROS camera_depth data
     void on_camera_filter(const std_msgs::Float32ConstPtr &msg)
     {
-      // cout << P << endl;
       particles[P].obs = msg->data;
     }
 
@@ -229,27 +233,32 @@ namespace gazebo
     }
 
     float fctObservation(float obs, float obs_p){
-      if (obs == V_MIN)
-	return cdf(0.5, obs_p, STD_DEV);
-      if (obs == V_MAX)
-	return 1 - cdf(obs - 0.5, obs_p, STD_DEV);
-      if (obs > V_MIN && obs < V_MAX)
-	return pdf(obs, obs_p, STD_DEV);
-      return 0.0;
+      float res = 0.0;
+      
+      if(obs == V_MIN)
+	res = cdf(0.5, obs_p, STD_DEV);
+      else if(obs == V_MAX)
+	res =  1 - cdf(obs - 0.5, obs_p, STD_DEV);
+      else 
+	res = pdf(obs, obs_p, STD_DEV);
+
+      cout << "fct : " << res << endl;
+
+      return res;
     }
 
     // Cumulative distribution function of normal distribution
     float cdf(float x, float mean, float std_dev){
-      return 0.5 * erfc(-(x - mean) / (std_dev * sqrt(2)));
+      return 0.5 * (1 + erf((x - mean) / (std_dev * sqrt(2))));
     }
 
     // Probability density function of normal distribution
     float pdf(float x, float mean, float std_dev){
-      return 1 / (std_dev * sqrt(2*M_PI)) * exp(-pow(x - mean, 2) / (2 * pow(std_dev, 2)));
+      return 1 / (std_dev * sqrt(2 * M_PI)) * exp(-pow(x - mean, 2) / (2 * pow(std_dev, 2)));
     }
 
   private:
-    /// \brief ROS helper function that processes messages
+    /// \brief ROS helper function that processes cmd_vel messages
     void QueueThread()
     {
       static const double timeout = 0.01;
@@ -258,7 +267,7 @@ namespace gazebo
       }
     }
 
-    /// \brief ROS helper function that processes messages
+    /// \brief ROS helper function that processes camera messages
     void QueueThread_cam()
     {
       static const double timeout = 0.01;

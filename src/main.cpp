@@ -74,7 +74,7 @@ public :
     cv::Mat noise = cv::Mat(depth_img.size(), CV_32F);
     cv::randn(noise, MEAN, STD_DEV);
     depth_img += noise;
-    cv::normalize(depth_img, depth_img, V_MIN, V_MAX, CV_MINMAX, CV_32F);
+    // cv::normalize(depth_img, depth_img, V_MIN, V_MAX, CV_MINMAX, CV_32F);
     
     int r = depth_img.rows;
     int c = depth_img.cols;
@@ -94,6 +94,8 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   MyRobot r(n);
 
+  cv::theRNG().state = cv::getTickCount();
+  
   ros::Subscriber joy_sub = n.subscribe("/joy", 100, &MyRobot::joy_to_twist, &r);
   ros::spin();
  
