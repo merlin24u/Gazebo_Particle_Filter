@@ -94,7 +94,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   MyRobot r(n);
 
-  cv::theRNG().state = cv::getTickCount();
+  cv::theRNG().state = cv::getTickCount(); // set seed for rng
   
   ros::Subscriber joy_sub = n.subscribe("/joy", 100, &MyRobot::joy_to_twist, &r);
   ros::spin();

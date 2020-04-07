@@ -20,12 +20,12 @@ int N = 10; // number of particles used by default
 volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
-  float posX, posY, angle, density; // coordinates and orientation of a particle
+  float posX, posY, angle, weight; // coordinates, orientation and weight of a particle
   float obs; // camera_depth information
   gazebo::common::Time stamp;
   Particle(float x, float y, float alpha, gazebo::common::Time t) : posX(x), posY(y), angle(alpha), stamp(t) {
     obs = 0.0;
-    density = 1.0;
+    weight = 1.0 / N;
   } 
 };
 
@@ -189,13 +189,24 @@ namespace gazebo
     /// \param[in] msg ROS camera_depth data
     void on_camera(const std_msgs::Float32ConstPtr &msg)
     {
-      cout << "obs : " << msg->data << endl;
-      for(int i = 0; i < N; i++){
-	cout << "obs_" << i << " : " << particles[i].obs << endl;
-	particles[i].density *= fctObservation(msg->data, particles[i].obs);
-	cout << "Particle " << i << " : " << particles[i].density << endl; 
+      int i;
+      for(i = 0; i < N; i++)
+	particles[i].weight *= fctObservation(msg->data, particles[i].obs);
+
+      float sum = 0.0;
+      for(i = 0; i < N; i++)
+	sum += particles[i].weight;
+
+      if(sum != 0){
+	for(i = 0; i < N; i++){
+	  particles[i].weight /= sum;
+	  cout << "Particle " << i << " : " << particles[i].weight << " ";
+	}
+
+	cout << endl;
       }
-      cout << endl;
+
+      // TODO Resampling
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
@@ -242,7 +253,7 @@ namespace gazebo
       else 
 	res = pdf(obs, obs_p, STD_DEV);
 
-      cout << "fct : " << res << endl;
+      // cout << "fct : " << res << endl;
 
       return res;
     }
