@@ -22,28 +22,43 @@ volatile int P = 0; // index of current particle in simulation
 struct Particle{
   float posX, posY, angle, weight; // coordinates, orientation and weight of a particle
   float obs; // camera_depth information
-  gazebo::common::Time stamp;
-  Particle(float x, float y, float alpha, gazebo::common::Time t) : posX(x), posY(y), angle(alpha), stamp(t) {
+
+  // Visual info
+  ignition::math::Color color;
+  string color_name;
+  // gazebo::common::Time stamp;
+  Particle(float x, float y, float alpha, ignition::math::Color c, string c_name) : posX(x), posY(y), angle(alpha), color(c), color_name(c_name){
     obs = 0.0;
     weight = 1.0 / N;
   } 
 };
 
-namespace gazebo
-{
+namespace gazebo{
+  
   /// \brief A plugin to control a Filter sensor.
-  class FilterPlugin : public ModelPlugin
-  {
+  class FilterPlugin : public ModelPlugin{
 
   private:
     /// \brief Pointer to the model.
     physics::ModelPtr model;
 
+    /// \brief Name of the model.
+    string model_name;
+
+    /// \brief Name of the model's parent.
+    string parent_name;
+    
     /// \brief Pointer to the world.
     physics::WorldPtr world;
 
     /// \brief An array of particles
     vector<Particle> particles;
+
+    /// \brief A node use for Gazebo transport
+    transport::NodePtr gzNode;
+
+    // \brief Visual topic  publisher 
+    transport::PublisherPtr visualPub;
     
     /// \brief A node use for ROS transport
     unique_ptr<ros::NodeHandle> rosNode;
@@ -87,6 +102,8 @@ namespace gazebo
       
       // Store the model pointer for convenience.
       this->model = _model;
+      this->model_name = this->model->GetName();
+      this->parent_name = "";
 
       // Store the world pointer for convenience.
       this->world = this->model->GetWorld();
@@ -103,16 +120,57 @@ namespace gazebo
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
-      gazebo::common::Time stamp = gazebo::common::Time::GetWallTime();
+      uniform_int_distribution<int> distribution_color(0, 6);
+      // gazebo::common::Time stamp = gazebo::common::Time::GetWallTime();
 
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
 	float posY = distribution_height(generator);
 	float angle = distribution_angle(generator);
+	int color_idx = distribution_color(generator);
+	ignition::math::Color color;
+	string color_name;
+
+	switch(color_idx){
+	case 0:
+	  color_name = "Black";
+	  color = ignition::math::Color::Black;
+	  break;
+	case 1:
+	  color_name = "Blue";
+	  color = ignition::math::Color::Blue;
+	  break;
+	case 2:
+	  color_name = "Green";
+	  color = ignition::math::Color::Green;
+	  break;
+	case 3:
+	  color_name = "Magenta";
+	  color = ignition::math::Color::Magenta;
+	  break;
+	case 4:
+	  color_name = "Red";
+	  color = ignition::math::Color::Red;
+	  break;
+	case 5:
+	  color_name = "Yellow";
+	  color = ignition::math::Color::Yellow;
+	  break;
+	case 6:
+	  color_name = "White";
+	  color = ignition::math::Color::White;
+	  break;
+	}
 	
-	Particle p(posX, posY, angle, stamp);
+	Particle p(posX, posY, angle, color, color_name);
 	particles.push_back(p);
       }
+
+      // Initialize transport
+      this->gzNode = transport::NodePtr(new transport::Node());
+      this->gzNode->Init();
+
+      this->visualPub = this->gzNode->Advertise<gazebo::msgs::Visual>("/gazebo/filter_world/visual");
 
       // Initialize ros, if it has not already bee initialized.
       if(!ros::isInitialized()){
@@ -180,9 +238,9 @@ namespace gazebo
 	th = th * MAX_SPEED / k;
       }
 
-      gazebo::common::Time now = gazebo::common::Time::GetWallTime();
+      // gazebo::common::Time now = gazebo::common::Time::GetWallTime();
       for(int i = 0; i < N; i++)
-	setPose(i, now, x - th, x + th);
+	setPose(i, x - th, x + th);
     }
 
     /// \brief Handle an incoming message from ROS camera_depth
@@ -200,7 +258,7 @@ namespace gazebo
       if(sum != 0){
 	for(i = 0; i < N; i++){
 	  particles[i].weight /= sum;
-	  cout << "Particle " << i << " : " << particles[i].weight << " ";
+	  cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
 	}
 
 	cout << endl;
@@ -217,15 +275,29 @@ namespace gazebo
     }
 
     /// \brief Set the new pose of a particle
-    /// \param[in] t Time cmd_vel msg has been sent 
     /// \param[in] p Particle
     /// \param[in] r Right target velocity
     /// \param[in] l Left target velocity
-    void setPose(const int &p, const gazebo::common::Time &t, const double &l, const double &r)
+    void setPose(const int &p, const double &l, const double &r)
     {
       P = p; // set the current particle in simulation
-      float dt = (t - particles[p].stamp).Float() * 1000; // in ms
-      particles[p].stamp = gazebo::common::Time::GetWallTime();
+
+      // Change color of model
+      gazebo::msgs::Visual visualMsg;
+      gazebo::msgs::Material *material = new gazebo::msgs::Material();
+      gazebo::msgs::Color *color= new gazebo::msgs::Color();
+      ignition::math::Color color_p = particles[P].color;
+      visualMsg.set_name(this->model_name);
+      visualMsg.set_parent_name(this->parent_name);
+      color->set_r(color_p.R());
+      color->set_g(color_p.G());
+      color->set_b(color_p.B());
+      material->set_allocated_ambient(color);
+      visualMsg.set_allocated_material(material);
+      this->visualPub->Publish(visualMsg);
+
+      // float dt = (t - particles[p].stamp).Float() * 1000; // in ms
+      // particles[p].stamp = gazebo::common::Time::GetWallTime();
       
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
