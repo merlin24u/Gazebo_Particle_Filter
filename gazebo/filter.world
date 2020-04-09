@@ -247,7 +247,7 @@
 
       <plugin name='control_filter' filename='libfilter_plugin.so'>
 	<velocity>15</velocity>
-	<nb_particles>3</nb_particles>
+	<nb_particles>10</nb_particles>
       </plugin>
     </model>
   </world>

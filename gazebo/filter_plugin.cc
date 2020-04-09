@@ -12,6 +12,7 @@
 #include <vector>
 #include <math.h>
 #include <random>
+#include <algorithm>
 #include "../src/desc_robot.hpp"
 
 using namespace std;
@@ -30,7 +31,12 @@ struct Particle{
   Particle(float x, float y, float alpha, ignition::math::Color c, string c_name) : posX(x), posY(y), angle(alpha), color(c), color_name(c_name){
     obs = 0.0;
     weight = 1.0 / N;
-  } 
+  }
+
+  Particle(const Particle &p, ignition::math::Color c, string c_name) : posX(p.posX), posY(p.posY), angle(p.angle), color(c), color_name(c_name){
+    obs = 0.0;
+    weight = 1.0 / N;
+  }
 };
 
 namespace gazebo{
@@ -83,6 +89,9 @@ namespace gazebo{
 
     /// \brief A thread the keeps running the rosQueue concerning camera info
     thread rosQueueThread_cam;
+
+    /// \brief Rng generator
+    default_random_engine generator;
   
   public:
     /// \brief Constructor
@@ -116,7 +125,7 @@ namespace gazebo{
 
       // Random initialization of N particles
       random_device rd;
-      default_random_engine generator(rd());
+      generator = default_random_engine(rd());
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
@@ -255,16 +264,37 @@ namespace gazebo{
       for(i = 0; i < N; i++)
 	sum += particles[i].weight;
 
+      // Normalize particles weigth
+      vector<float> weights;
       if(sum != 0){
 	for(i = 0; i < N; i++){
 	  particles[i].weight /= sum;
+	  weights.push_back(particles[i].weight);
 	  cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
 	}
 
 	cout << endl;
       }
 
-      // TODO Resampling
+      // Resampling
+      vector<Particle> new_particles;
+      // sort(weights.begin(), weights.end());
+      vector<float> cum_sum(weights.size());
+      uniform_real_distribution<float> distribution_weight(0.0, 1.0);
+      partial_sum(weights.begin(), weights.end(), cum_sum.begin());
+      for(i = 0; i < N; i++){
+	float w = distribution_weight(generator);
+	vector<float>::iterator it = find_if(cum_sum.begin(), cum_sum.end(), [&w](float weight){
+	    return w <= weight;
+	  });
+	int idx = it - cum_sum.begin();
+	Particle p = particles[idx];
+	Particle p_new(p, particles[i].color, particles[i].color_name);
+	new_particles.push_back(p);
+      }
+
+      particles.clear();
+      particles.insert(particles.begin(), new_particles.begin(), new_particles.end());
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
@@ -302,10 +332,12 @@ namespace gazebo{
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
 
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
+      uniform_real_distribution<float> distribution_speed(-MAX_SPEED, MAX_SPEED);
+      
+      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
+      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
 
-      this->world->Step(500); // nb of iterations
+      this->world->Step(250); // nb of iterations
       
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
