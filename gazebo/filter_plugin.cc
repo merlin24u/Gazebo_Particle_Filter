@@ -7,7 +7,7 @@
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
 #include <geometry_msgs/Twist.h>
-#include <std_msgs/Float32.h>
+#include <my_robot/Obs.h>
 #include <thread>
 #include <vector>
 #include <math.h>
@@ -23,20 +23,18 @@ volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
   float posX, posY, angle, weight; // coordinates, orientation and weight of a particle
-  float obs; // camera_depth information
+  vector<float> obs; // camera_depth information
 
   // Visual info
   ignition::math::Color color;
   string color_name;
 
   Particle(float x, float y, float alpha, int color_idx) : posX(x), posY(y), angle(alpha){
-    obs = 0.0;
     weight = 1.0 / N;
     setColor(color_idx);
   }
 
   Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle){
-    obs = 0.0;
     weight = 1.0 / N;
     setColor(color_idx);
   }
@@ -208,21 +206,21 @@ namespace gazebo{
 
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so_cam =
-	ros::SubscribeOptions::create<std_msgs::Float32>(
-							 "/my_robot/camera",
-							 100,
-							 boost::bind(&FilterPlugin::on_camera, this, _1),
-							 ros::VoidPtr(), &this->rosQueue_cam);
+	ros::SubscribeOptions::create<my_robot::Obs>(
+						     "/my_robot/camera",
+						     100,
+						     boost::bind(&FilterPlugin::on_camera, this, _1),
+						     ros::VoidPtr(), &this->rosQueue_cam);
       
       this->rosSub_cam = this->rosNode->subscribe(so_cam);
 
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so_cam_filter =
-	ros::SubscribeOptions::create<std_msgs::Float32>(
-							 "/filter/camera",
-							 100,
-							 boost::bind(&FilterPlugin::on_camera_filter, this, _1),
-							 ros::VoidPtr(), &this->rosQueue_cam);
+	ros::SubscribeOptions::create<my_robot::Obs>(
+						     "/filter/camera",
+						     100,
+						     boost::bind(&FilterPlugin::on_camera_filter, this, _1),
+						     ros::VoidPtr(), &this->rosQueue_cam);
       
       this->rosSub_cam_filter = this->rosNode->subscribe(so_cam_filter);
 
@@ -256,11 +254,14 @@ namespace gazebo{
 
     /// \brief Handle an incoming message from ROS camera_depth
     /// \param[in] msg ROS camera_depth data
-    void on_camera(const std_msgs::Float32ConstPtr &msg)
+    void on_camera(const my_robot::ObsConstPtr &msg)
     {
       int i;
       for(i = 0; i < N; i++)
-	particles[i].weight *= fctObservation(msg->data, particles[i].obs);
+	for(int o = 0; o < msg->data.size(); o++){
+	  float obs = msg->data[o];
+	  particles[i].weight *= fctObservation(obs, particles[i].obs[o]);
+	}
 
       float sum = 0.0;
       for(i = 0; i < N; i++)
@@ -298,14 +299,13 @@ namespace gazebo{
 	  new_particles.push_back(p);
 	}
 
-	particles.clear();
-	particles.insert(particles.begin(), new_particles.begin(), new_particles.end());
+	particles = new_particles;
       }
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
     /// \param[in] msg ROS camera_depth data
-    void on_camera_filter(const std_msgs::Float32ConstPtr &msg)
+    void on_camera_filter(const my_robot::ObsConstPtr &msg)
     {
       particles[P].obs = msg->data;
     }
@@ -376,8 +376,6 @@ namespace gazebo{
     float pdf(float x, float mean, float std_dev){
       return 1 / (std_dev * sqrt(2 * M_PI)) * exp(-pow(x - mean, 2) / (2 * pow(std_dev, 2)));
     }
-
-    
 
   private:
     /// \brief ROS helper function that processes cmd_vel messages

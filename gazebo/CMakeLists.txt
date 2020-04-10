@@ -4,11 +4,11 @@ add_compile_options(-std=c++11)
 # ROS
 find_package(roscpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(my_robot REQUIRED)
 find_package(sensor_msgs REQUIRED)
 include_directories(${roscpp_INCLUDE_DIRS})
 include_directories(${geometry_msgs_INCLUDE_DIRS})
-include_directories(${std_msgs_INCLUDE_DIRS})
+include_directories(${my_robot_INCLUDE_DIRS})
 include_directories(${sensor_msgs_INCLUDE_DIRS})
 
 # Find Gazebo

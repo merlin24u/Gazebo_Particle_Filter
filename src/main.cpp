@@ -3,7 +3,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Joy.h>
-#include <std_msgs/Float32.h>
+#include <my_robot/Obs.h>
 #include <geometry_msgs/Twist.h>
 #include <opencv2/core/mat.hpp>
 #include "desc_robot.hpp"
@@ -17,8 +17,8 @@ private :
 public :
   MyRobot(ros::NodeHandle &n) : it(n) {
     cmd_pub = n.advertise<geometry_msgs::Twist>("/my_robot/vel_cmd", 100);
-    camera_pub = n.advertise<std_msgs::Float32>("/my_robot/camera", 100);
-    camera_filter_pub = n.advertise<std_msgs::Float32>("/filter/camera", 100);
+    camera_pub = n.advertise<my_robot::Obs>("/my_robot/camera", 100);
+    camera_filter_pub = n.advertise<my_robot::Obs>("/filter/camera", 100);
 
     // Subscrive to input video feed
     image_sub = it.subscribe("/camera/depth/image_raw", 100,
@@ -37,54 +37,42 @@ public :
     cmd_pub.publish(tw);
   }
 
-  void imagePub(const sensor_msgs::ImageConstPtr& msg){
-    float depth = imageCb(msg);
+  void imagePub(const sensor_msgs::ImageConstPtr &img){
+    my_robot::Obs msg;
+    imageCb(img, msg);
 
-    if(depth != -1){
-      std_msgs::Float32 msg;
-      msg.data = depth;
-      
-      camera_pub.publish(msg);
-    }
+    camera_pub.publish(msg);
   }
 
-  void imageFilterPub(const sensor_msgs::ImageConstPtr& msg){
-    float depth = imageCb(msg);
+  void imageFilterPub(const sensor_msgs::ImageConstPtr &img){
+    my_robot::Obs msg;
+    imageCb(img, msg);
 
-    if(depth != -1){
-      std_msgs::Float32 msg;
-      msg.data = depth;
-      
-      camera_filter_pub.publish(msg);
-    }
+    camera_filter_pub.publish(msg);
   }
 
   // Conversion Msg -> openCV image
-  float imageCb(const sensor_msgs::ImageConstPtr& msg)
+  void imageCb(const sensor_msgs::ImageConstPtr& img, my_robot::Obs &depth)
   {
     cv_bridge::CvImagePtr cv_ptr;
     try{
-      cv_ptr = cv_bridge::toCvCopy(msg, "32FC1");
-    }catch(cv_bridge::Exception& e){
+      cv_ptr = cv_bridge::toCvCopy(img, "32FC1");
+    }catch(const cv_bridge::Exception& e){
       ROS_ERROR("cv_bridge exception: %s", e.what());
-      return -1;
+      return;
     }
 
     cv::Mat depth_img = cv_ptr->image;
     cv::Mat noise = cv::Mat(depth_img.size(), CV_32F);
     cv::randn(noise, MEAN, STD_DEV);
     depth_img += noise;
-    // cv::normalize(depth_img, depth_img, V_MIN, V_MAX, CV_MINMAX, CV_32F);
     
     int r = depth_img.rows;
     int c = depth_img.cols;
 
-    float depth = depth_img.at<float>(r/2, c/2);
-
-    if(!std::isnan(depth))
-      return depth;
-    else
-      return -1;
+    depth.data.push_back(depth_img.at<float>(r/2, c/2));
+    depth.data.push_back(depth_img.at<float>(r/2, 0));
+    depth.data.push_back(depth_img.at<float>(r/2, c - 1));
   }
 };
   
@@ -94,7 +82,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   MyRobot r(n);
 
-  cv::theRNG().state = cv::getTickCount(); // set seed for rng
+  cv::theRNG().state = cv::getTickCount(); // set seed for rng noise
   
   ros::Subscriber joy_sub = n.subscribe("/joy", 100, &MyRobot::joy_to_twist, &r);
   ros::spin();

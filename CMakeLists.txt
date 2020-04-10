@@ -57,11 +57,10 @@ find_package(OpenCV REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   Obs.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -78,10 +77,10 @@ find_package(OpenCV REQUIRED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -217,4 +216,4 @@ include_directories(
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES} ${OpenCV_LIBS})
-# add_dependencies(main my_robot_generate_messages_cpp)
+add_dependencies(main my_robot_generate_messages_cpp)
