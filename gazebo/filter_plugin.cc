@@ -13,6 +13,7 @@
 #include <math.h>
 #include <random>
 #include <algorithm>
+#include <limits>
 #include "../src/desc_robot.hpp"
 
 using namespace std;
@@ -27,15 +28,50 @@ struct Particle{
   // Visual info
   ignition::math::Color color;
   string color_name;
-  // gazebo::common::Time stamp;
-  Particle(float x, float y, float alpha, ignition::math::Color c, string c_name) : posX(x), posY(y), angle(alpha), color(c), color_name(c_name){
+
+  Particle(float x, float y, float alpha, int color_idx) : posX(x), posY(y), angle(alpha){
     obs = 0.0;
     weight = 1.0 / N;
+    setColor(color_idx);
   }
 
-  Particle(const Particle &p, ignition::math::Color c, string c_name) : posX(p.posX), posY(p.posY), angle(p.angle), color(c), color_name(c_name){
+  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle){
     obs = 0.0;
     weight = 1.0 / N;
+    setColor(color_idx);
+  }
+
+  void setColor(int color_idx){
+    switch(color_idx){
+    case 0:
+      color_name = "Black";
+      color = ignition::math::Color::Black;
+      break;
+    case 1:
+      color_name = "Blue";
+      color = ignition::math::Color::Blue;
+      break;
+    case 2:
+      color_name = "Green";
+      color = ignition::math::Color::Green;
+      break;
+    case 3:
+      color_name = "Magenta";
+      color = ignition::math::Color::Magenta;
+      break;
+    case 4:
+      color_name = "Red";
+      color = ignition::math::Color::Red;
+      break;
+    case 5:
+      color_name = "Yellow";
+      color = ignition::math::Color::Yellow;
+      break;
+    case 6:
+      color_name = "White";
+      color = ignition::math::Color::White;
+      break;
+    }
   }
 };
 
@@ -130,48 +166,14 @@ namespace gazebo{
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
       uniform_int_distribution<int> distribution_color(0, 6);
-      // gazebo::common::Time stamp = gazebo::common::Time::GetWallTime();
-
+      
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
 	float posY = distribution_height(generator);
 	float angle = distribution_angle(generator);
 	int color_idx = distribution_color(generator);
-	ignition::math::Color color;
-	string color_name;
-
-	switch(color_idx){
-	case 0:
-	  color_name = "Black";
-	  color = ignition::math::Color::Black;
-	  break;
-	case 1:
-	  color_name = "Blue";
-	  color = ignition::math::Color::Blue;
-	  break;
-	case 2:
-	  color_name = "Green";
-	  color = ignition::math::Color::Green;
-	  break;
-	case 3:
-	  color_name = "Magenta";
-	  color = ignition::math::Color::Magenta;
-	  break;
-	case 4:
-	  color_name = "Red";
-	  color = ignition::math::Color::Red;
-	  break;
-	case 5:
-	  color_name = "Yellow";
-	  color = ignition::math::Color::Yellow;
-	  break;
-	case 6:
-	  color_name = "White";
-	  color = ignition::math::Color::White;
-	  break;
-	}
 	
-	Particle p(posX, posY, angle, color, color_name);
+	Particle p(posX, posY, angle, color_idx);
 	particles.push_back(p);
       }
 
@@ -179,6 +181,7 @@ namespace gazebo{
       this->gzNode = transport::NodePtr(new transport::Node());
       this->gzNode->Init();
 
+      // Gazebo publisher for changing visual of robot
       this->visualPub = this->gzNode->Advertise<gazebo::msgs::Visual>("/gazebo/filter_world/visual");
 
       // Initialize ros, if it has not already bee initialized.
@@ -247,7 +250,6 @@ namespace gazebo{
 	th = th * MAX_SPEED / k;
       }
 
-      // gazebo::common::Time now = gazebo::common::Time::GetWallTime();
       for(int i = 0; i < N; i++)
 	setPose(i, x - th, x + th);
     }
@@ -265,36 +267,40 @@ namespace gazebo{
 	sum += particles[i].weight;
 
       // Normalize particles weigth
+      float min_weight = numeric_limits<float>::max();
       vector<float> weights;
-      if(sum != 0){
-	for(i = 0; i < N; i++){
-	  particles[i].weight /= sum;
-	  weights.push_back(particles[i].weight);
-	  cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
-	}
-
-	cout << endl;
+      for(i = 0; i < N; i++){
+	min_weight = min(min_weight, particles[i].weight);
+	particles[i].weight /= sum;
+	weights.push_back(particles[i].weight);
+	cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
       }
+
+      cout << endl;
 
       // Resampling
-      vector<Particle> new_particles;
-      // sort(weights.begin(), weights.end());
-      vector<float> cum_sum(weights.size());
-      uniform_real_distribution<float> distribution_weight(0.0, 1.0);
-      partial_sum(weights.begin(), weights.end(), cum_sum.begin());
-      for(i = 0; i < N; i++){
-	float w = distribution_weight(generator);
-	vector<float>::iterator it = find_if(cum_sum.begin(), cum_sum.end(), [&w](float weight){
-	    return w <= weight;
-	  });
-	int idx = it - cum_sum.begin();
-	Particle p = particles[idx];
-	Particle p_new(p, particles[i].color, particles[i].color_name);
-	new_particles.push_back(p);
-      }
+      if(min_weight < (1.0 / 1000.0)){
+	vector<Particle> new_particles;
+	// sort(weights.begin(), weights.end());
+	vector<float> cum_sum(weights.size());
+	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
+	uniform_int_distribution<int> distribution_color(0, 6);
+	partial_sum(weights.begin(), weights.end(), cum_sum.begin());
+	for(i = 0; i < N; i++){
+	  float w = distribution_weight(generator);
+	  int color_idx = distribution_color(generator);
+	  vector<float>::iterator it = find_if(cum_sum.begin(), cum_sum.end(), [&w](float weight){
+	      return w <= weight;
+	    });
+	  int idx = it - cum_sum.begin();
+	  Particle p = particles[idx];
+	  Particle p_new(p, color_idx);
+	  new_particles.push_back(p);
+	}
 
-      particles.clear();
-      particles.insert(particles.begin(), new_particles.begin(), new_particles.end());
+	particles.clear();
+	particles.insert(particles.begin(), new_particles.begin(), new_particles.end());
+      }
     }
 
     /// \brief Handle an incoming message from ROS camera_depth particle
@@ -326,19 +332,20 @@ namespace gazebo{
       visualMsg.set_allocated_material(material);
       this->visualPub->Publish(visualMsg);
 
-      // float dt = (t - particles[p].stamp).Float() * 1000; // in ms
-      // particles[p].stamp = gazebo::common::Time::GetWallTime();
-      
+      // Set pose of robot according to particle p pose
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
 
+      // Set random speed of two wheels
       uniform_real_distribution<float> distribution_speed(-MAX_SPEED, MAX_SPEED);
       
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
 
+      // Move particle p in world 
       this->world->Step(250); // nb of iterations
-      
+
+      // Get pose of robot after n iterations and set new pose of particle p
       auto model_pose = this->model->WorldPose();
       auto pose = model_pose.Pos();
       auto rot = model_pose.Rot();
@@ -357,8 +364,6 @@ namespace gazebo{
       else 
 	res = pdf(obs, obs_p, STD_DEV);
 
-      // cout << "fct : " << res << endl;
-
       return res;
     }
 
@@ -371,6 +376,8 @@ namespace gazebo{
     float pdf(float x, float mean, float std_dev){
       return 1 / (std_dev * sqrt(2 * M_PI)) * exp(-pow(x - mean, 2) / (2 * pow(std_dev, 2)));
     }
+
+    
 
   private:
     /// \brief ROS helper function that processes cmd_vel messages
