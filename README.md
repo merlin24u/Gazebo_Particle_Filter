@@ -6,7 +6,7 @@
 
 ## Instructions
 
-* System (modidy `~/.bashrc`)
+* System (modify `~/.bashrc`)
 
 ```
 source /usr/share/gazebo/setup.sh
