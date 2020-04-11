@@ -257,11 +257,14 @@ namespace gazebo{
     void on_camera(const my_robot::ObsConstPtr &msg)
     {
       int i;
-      for(i = 0; i < N; i++)
+      for(i = 0; i < N; i++){
+	if(msg->data.size() != particles[i].obs.size())
+	  return;
 	for(int o = 0; o < msg->data.size(); o++){
 	  float obs = msg->data[o];
 	  particles[i].weight *= fctObservation(obs, particles[i].obs[o]);
 	}
+      }
 
       float sum = 0.0;
       for(i = 0; i < N; i++)
@@ -343,7 +346,7 @@ namespace gazebo{
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
 
       // Move particle p in world 
-      this->world->Step(250); // nb of iterations
+      this->world->Step(500); // nb of iterations
 
       // Get pose of robot after n iterations and set new pose of particle p
       auto model_pose = this->model->WorldPose();
