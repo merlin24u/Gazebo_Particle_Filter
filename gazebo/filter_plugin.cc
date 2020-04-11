@@ -19,6 +19,7 @@
 using namespace std;
 
 int N = 10; // number of particles used by default
+const int NB_OBS = 3;
 volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
@@ -29,12 +30,12 @@ struct Particle{
   ignition::math::Color color;
   string color_name;
 
-  Particle(float x, float y, float alpha, int color_idx) : posX(x), posY(y), angle(alpha){
+  Particle(float x, float y, float alpha, int color_idx) : posX(x), posY(y), angle(alpha), obs(NB_OBS, 0.0){
     weight = 1.0 / N;
     setColor(color_idx);
   }
 
-  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle){
+  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle), obs(NB_OBS, 0.0){
     weight = 1.0 / N;
     setColor(color_idx);
   }
@@ -126,6 +127,8 @@ namespace gazebo{
 
     /// \brief Rng generator
     default_random_engine generator;
+
+    uniform_int_distribution<int> distribution_color;
   
   public:
     /// \brief Constructor
@@ -160,10 +163,10 @@ namespace gazebo{
       // Random initialization of N particles
       random_device rd;
       generator = default_random_engine(rd());
+      distribution_color = uniform_int_distribution<int>(0, 6);
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
-      uniform_int_distribution<int> distribution_color(0, 6);
       
       for(int i = 0; i < N; i++){
 	float posX = distribution_width(generator);
@@ -257,25 +260,21 @@ namespace gazebo{
     void on_camera(const my_robot::ObsConstPtr &msg)
     {
       int i;
-      for(i = 0; i < N; i++){
-	if(msg->data.size() != particles[i].obs.size())
-	  return;
-	for(int o = 0; o < msg->data.size(); o++){
-	  float obs = msg->data[o];
-	  particles[i].weight *= fctObservation(obs, particles[i].obs[o]);
+      for(i = 0; i < N; i++)
+	for(int o = 0; o < particles[i].obs.size(); o++){
+	  particles[i].weight *= fctObservation(msg->data[o], particles[i].obs[o]);
 	}
-      }
 
       float sum = 0.0;
       for(i = 0; i < N; i++)
 	sum += particles[i].weight;
-
+      
       // Normalize particles weigth
-      float min_weight = numeric_limits<float>::max();
+      float max_weight = numeric_limits<float>::min();
       vector<float> weights;
       for(i = 0; i < N; i++){
-	min_weight = min(min_weight, particles[i].weight);
 	particles[i].weight /= sum;
+	max_weight = max(max_weight, particles[i].weight);
 	weights.push_back(particles[i].weight);
 	cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
       }
@@ -283,12 +282,11 @@ namespace gazebo{
       cout << endl;
 
       // Resampling
-      if(min_weight < (1.0 / 1000.0)){
+      if(max_weight >= 0.25){
 	vector<Particle> new_particles;
 	// sort(weights.begin(), weights.end());
 	vector<float> cum_sum(weights.size());
 	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
-	uniform_int_distribution<int> distribution_color(0, 6);
 	partial_sum(weights.begin(), weights.end(), cum_sum.begin());
 	for(i = 0; i < N; i++){
 	  float w = distribution_weight(generator);
@@ -299,7 +297,7 @@ namespace gazebo{
 	  int idx = it - cum_sum.begin();
 	  Particle p = particles[idx];
 	  Particle p_new(p, color_idx);
-	  new_particles.push_back(p);
+	  new_particles.push_back(p_new);
 	}
 
 	particles = new_particles;
@@ -340,13 +338,13 @@ namespace gazebo{
       this->model->SetWorldPose(initPose);
 
       // Set random speed of two wheels
-      uniform_real_distribution<float> distribution_speed(-MAX_SPEED, MAX_SPEED);
+      // uniform_real_distribution<float> distribution_speed(-MAX_SPEED, MAX_SPEED);
       
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, distribution_speed(generator));
+      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
+      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
 
       // Move particle p in world 
-      this->world->Step(500); // nb of iterations
+      this->world->Step(1000); // nb of iterations
 
       // Get pose of robot after n iterations and set new pose of particle p
       auto model_pose = this->model->WorldPose();

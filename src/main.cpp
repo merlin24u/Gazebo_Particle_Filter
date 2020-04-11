@@ -39,27 +39,29 @@ public :
 
   void imagePub(const sensor_msgs::ImageConstPtr &img){
     my_robot::Obs msg;
-    imageCb(img, msg);
+    int res = imageCb(img, msg);
 
-    camera_pub.publish(msg);
+    if(res != -1)
+      camera_pub.publish(msg);
   }
 
   void imageFilterPub(const sensor_msgs::ImageConstPtr &img){
     my_robot::Obs msg;
-    imageCb(img, msg);
+    int res = imageCb(img, msg);
 
-    camera_filter_pub.publish(msg);
+    if(res != -1)
+      camera_filter_pub.publish(msg);
   }
 
   // Conversion Msg -> openCV image
-  void imageCb(const sensor_msgs::ImageConstPtr& img, my_robot::Obs &depth)
+  int imageCb(const sensor_msgs::ImageConstPtr& img, my_robot::Obs &msg)
   {
     cv_bridge::CvImagePtr cv_ptr;
     try{
       cv_ptr = cv_bridge::toCvCopy(img, "32FC1");
     }catch(const cv_bridge::Exception& e){
       ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+      return -1;
     }
 
     cv::Mat depth_img = cv_ptr->image;
@@ -70,9 +72,15 @@ public :
     int r = depth_img.rows;
     int c = depth_img.cols;
 
-    depth.data.push_back(depth_img.at<float>(r/2, c/2));
-    depth.data.push_back(depth_img.at<float>(r/2, 0));
-    depth.data.push_back(depth_img.at<float>(r/2, c - 1));
+    msg.data.push_back(depth_img.at<float>(r/2, c/2));
+    msg.data.push_back(depth_img.at<float>(r/2, 0));
+    msg.data.push_back(depth_img.at<float>(r/2, c - 1));
+
+    for(int i = 0; i < msg.data.size(); i++)
+      if(std::isnan(msg.data[i]))
+	return -1;
+
+    return 0;
   }
 };
   
