@@ -284,7 +284,12 @@ namespace gazebo{
       // Resampling
       if(max_weight >= 0.25){
 	vector<Particle> new_particles;
-	// sort(weights.begin(), weights.end());
+	sort(weights.begin(), weights.end());
+	sort(particles.begin(), particles.end(), 
+	     [](const Particle &p1, const Particle &p2) -> bool
+	     { 
+	       return p1.weight < p2.weight; 
+	     });
 	vector<float> cum_sum(weights.size());
 	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
 	partial_sum(weights.begin(), weights.end(), cum_sum.begin());
