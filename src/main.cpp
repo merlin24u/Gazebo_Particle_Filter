@@ -66,7 +66,7 @@ public :
 
     cv::Mat depth_img = cv_ptr->image;
     cv::Mat noise = cv::Mat(depth_img.size(), CV_32F);
-    cv::randn(noise, MEAN, STD_DEV);
+    cv::randn(noise, 0.0, STD_DEV);
     depth_img += noise;
     
     int r = depth_img.rows;

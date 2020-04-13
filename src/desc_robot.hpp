@@ -9,7 +9,6 @@ int MAX_SPEED = 10; // speed in radian/s of wheels by default
 
 // Camera description
 
-const static float MEAN = 0.0; // mean of sensor 
 const static float STD_DEV = 2.87; // std of sensor
 const static float V_MIN = 0.1; // value min
 const static float V_MAX = 10.0; // value max

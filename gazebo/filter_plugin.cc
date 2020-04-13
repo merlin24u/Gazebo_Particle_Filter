@@ -19,7 +19,7 @@
 using namespace std;
 
 int N = 10; // number of particles used by default
-const int NB_OBS = 3;
+const int NB_OBS = 3; // number of sensors (cf main.cpp)
 volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
@@ -128,6 +128,7 @@ namespace gazebo{
     /// \brief Rng generator
     default_random_engine generator;
 
+    /// \brief Rng distribution for particles color
     uniform_int_distribution<int> distribution_color;
   
   public:
@@ -183,7 +184,7 @@ namespace gazebo{
       this->gzNode->Init();
 
       // Gazebo publisher for changing visual of robot
-      this->visualPub = this->gzNode->Advertise<gazebo::msgs::Visual>("/gazebo/filter_world/visual");
+      this->visualPub = this->gzNode->Advertise<gazebo::msgs::Visual>("/gazebo/" + this->world->Name() + "/visual");
 
       // Initialize ros, if it has not already bee initialized.
       if(!ros::isInitialized()){
@@ -261,9 +262,8 @@ namespace gazebo{
     {
       int i;
       for(i = 0; i < N; i++)
-	for(int o = 0; o < particles[i].obs.size(); o++){
+	for(int o = 0; o < particles[i].obs.size(); o++)
 	  particles[i].weight *= fctObservation(msg->data[o], particles[i].obs[o]);
-	}
 
       float sum = 0.0;
       for(i = 0; i < N; i++)
@@ -295,9 +295,8 @@ namespace gazebo{
 	      return w <= weight;
 	    });
 	  int idx = it - cum_sum.begin();
-	  Particle p = particles[idx];
-	  Particle p_new(p, color_idx);
-	  new_particles.push_back(p_new);
+	  Particle p(particles[idx], color_idx);
+	  new_particles.push_back(p);
 	}
 
 	particles = new_particles;
