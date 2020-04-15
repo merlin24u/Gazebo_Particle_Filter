@@ -15,11 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   message_generation
-  gazebo_ros
 )
-
-# Depend on system install of Gazebo
-find_package(gazebo REQUIRED)
 
 # Depend on system install openCV
 find_package(OpenCV REQUIRED)
@@ -115,7 +111,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot
    CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs std_msgs sensor_msgs
-   DEPENDS gazebo_ros # system_lib
+#   DEPENDS system_lib
 )
 
 ###########
@@ -126,7 +122,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-  ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
