@@ -110,8 +110,8 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot
-   CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs std_msgs sensor_msgs
-#   DEPENDS system_lib
+#  CATKIN_DEPENDS message_runtime roscpp cv_bridge image_transport geometry_msgs std_msgs sensor_msgs
+#  DEPENDS system_lib
 )
 
 ###########
