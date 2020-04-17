@@ -263,6 +263,11 @@ namespace gazebo{
       int i;
       for(i = 0; i < N; i++)
 	for(int o = 0; o < particles[i].obs.size(); o++)
+	  if(particles[i].obs[o] == 0.0)
+	    return;
+      
+      for(i = 0; i < N; i++)
+	for(int o = 0; o < particles[i].obs.size(); o++)
 	  particles[i].weight *= fctObservation(msg->data[o], particles[i].obs[o]);
 
       float sum = 0.0;
@@ -284,12 +289,14 @@ namespace gazebo{
       // Resampling
       if(max_weight >= 0.25){
 	vector<Particle> new_particles;
-	sort(weights.begin(), weights.end());
-	sort(particles.begin(), particles.end(), 
-	     [](const Particle &p1, const Particle &p2) -> bool
-	     { 
-	       return p1.weight < p2.weight; 
-	     });
+	/*
+	  sort(weights.begin(), weights.end());
+	  sort(particles.begin(), particles.end(), 
+	  [](const Particle &p1, const Particle &p2) -> bool
+	  { 
+	  return p1.weight < p2.weight; 
+	  });
+	*/
 	vector<float> cum_sum(weights.size());
 	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
 	partial_sum(weights.begin(), weights.end(), cum_sum.begin());
