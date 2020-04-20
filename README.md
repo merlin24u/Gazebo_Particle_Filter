@@ -44,3 +44,7 @@ rosparam set joy_node/dev "/dev/input/js0"
 rosrun joy joy_node
 rosrun my_robot main
 ```
+
+## Remarks
+
+* Frequent crash of Gazebo app throwing GLXBadDrawable error

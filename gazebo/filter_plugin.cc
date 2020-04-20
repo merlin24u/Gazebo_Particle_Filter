@@ -130,6 +130,9 @@ namespace gazebo{
 
     /// \brief Rng distribution for particles color
     uniform_int_distribution<int> distribution_color;
+
+    /// \brief Rng distribution for particles direction
+    uniform_int_distribution<int> distribution_dir;
   
   public:
     /// \brief Constructor
@@ -165,6 +168,7 @@ namespace gazebo{
       random_device rd;
       generator = default_random_engine(rd());
       distribution_color = uniform_int_distribution<int>(0, 6);
+      distribution_dir = uniform_int_distribution<int>(0, 3);
       uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
@@ -238,22 +242,10 @@ namespace gazebo{
     }
 
     /// \brief Handle an incoming message from ROS cmd_vel
-    /// \param[in] data Joy inputs that is used to set the velocity
-    /// of all particles.
     void on_cmd(const geometry_msgs::TwistConstPtr &data)
     {
-      float x = -data->linear.x * 1000.0; // in millimeters
-      float th = data->angular.z * (BASE_WIDTH/2);
-      float k = max(abs(x - th), abs(x + th));
-      
-      // sending commands higher than max speed will fail
-      if (k > MAX_SPEED){
-	x = x * MAX_SPEED / k;
-	th = th * MAX_SPEED / k;
-      }
-
-      for(int i = 0; i < N; i++)
-	setPose(i, x - th, x + th);
+      for(int p = 0; p < N; p++)
+	setPose(p);
     }
 
     /// \brief Handle an incoming message from ROS camera_depth
@@ -261,6 +253,7 @@ namespace gazebo{
     void on_camera(const my_robot::ObsConstPtr &msg)
     {
       int i;
+      // Check if all particles have non-zero observation data
       for(i = 0; i < N; i++)
 	for(int o = 0; o < particles[i].obs.size(); o++)
 	  if(particles[i].obs[o] == 0.0)
@@ -281,22 +274,14 @@ namespace gazebo{
 	particles[i].weight /= sum;
 	max_weight = max(max_weight, particles[i].weight);
 	weights.push_back(particles[i].weight);
-	cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << " ";
+	cout << "Particle " << i << " (" << particles[i].color_name << ") : " << particles[i].weight << endl;
       }
 
       cout << endl;
 
       // Resampling
-      if(max_weight >= 0.25){
+      if(max_weight >= 0.3){
 	vector<Particle> new_particles;
-	/*
-	  sort(weights.begin(), weights.end());
-	  sort(particles.begin(), particles.end(), 
-	  [](const Particle &p1, const Particle &p2) -> bool
-	  { 
-	  return p1.weight < p2.weight; 
-	  });
-	*/
 	vector<float> cum_sum(weights.size());
 	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
 	partial_sum(weights.begin(), weights.end(), cum_sum.begin());
@@ -326,7 +311,7 @@ namespace gazebo{
     /// \param[in] p Particle
     /// \param[in] r Right target velocity
     /// \param[in] l Left target velocity
-    void setPose(const int &p, const double &l, const double &r)
+    void setPose(const int &p)
     {
       P = p; // set the current particle in simulation
 
@@ -348,8 +333,29 @@ namespace gazebo{
       ignition::math::Pose3d initPose(ignition::math::Vector3d(particles[p].posX, particles[p].posY, 0.), ignition::math::Quaterniond(0., 0., particles[p].angle));
       this->model->SetWorldPose(initPose);
 
-      // Set random speed of two wheels
-      // uniform_real_distribution<float> distribution_speed(-MAX_SPEED, MAX_SPEED);
+      // Set random direction
+      float r = 0.0, l = 0.0;
+      
+      switch(distribution_dir(generator)){
+      case 0:
+	// Forward
+	r = l = MAX_SPEED;
+	break;
+      case 1:
+	// Backward
+	r = l = -MAX_SPEED;
+	break;
+      case 2:
+	// Left
+	r = MAX_SPEED;
+	l = -MAX_SPEED;
+	break;
+      case 3:
+	// Right
+	r = -MAX_SPEED;
+	l = MAX_SPEED;
+	break;
+      }
       
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
@@ -372,7 +378,7 @@ namespace gazebo{
       if(obs == V_MIN)
 	res = cdf(0.5, obs_p, STD_DEV);
       else if(obs == V_MAX)
-	res =  1 - cdf(obs - 0.5, obs_p, STD_DEV);
+	res = 1 - cdf(obs - 0.5, obs_p, STD_DEV);
       else 
 	res = pdf(obs, obs_p, STD_DEV);
 
