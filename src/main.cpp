@@ -33,7 +33,7 @@ public :
   void joy_to_twist(const sensor_msgs::Joy &joy){
     geometry_msgs::Twist tw;
     tw.linear.x = 0.1 * joy.axes[1];
-    tw.angular.z = 0.5 * joy.axes[0];
+    tw.angular.z = 0.1 * joy.axes[0];
     cmd_pub.publish(tw);
   }
 

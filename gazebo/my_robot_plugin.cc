@@ -10,11 +10,9 @@
 #include <thread>
 #include <vector>
 #include <math.h>
+#include "../src/desc_robot.hpp"
 
 using namespace std;
-
-const int BASE_WIDTH = 200; // millimeters
-int MAX_SPEED = 10; // radian/s default
 
 namespace gazebo
 {
@@ -92,7 +90,7 @@ namespace gazebo
     /// of the MyRobot.
     void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
     {
-      float x = -data->linear.x * 1000.0; // from meters to millimeters
+      float x = data->linear.x * 1000.0; // from meters to millimeters
       float th = data->angular.z * (BASE_WIDTH/2); // in mm
       float k = max(abs(x - th), abs(x + th));
       
@@ -101,8 +99,12 @@ namespace gazebo
 	x = x * MAX_SPEED / k;
 	th = th * MAX_SPEED / k;
       }
-      
-      this->SetVelocity(x - th, x + th);
+
+      if(x >= 0)
+	this->SetVelocity(x - th, -x - th);
+      else
+	this->SetVelocity(x + th, -x + th);
+	
     }
 
     /// \brief Set the velocity of the MyRobot
@@ -110,6 +112,7 @@ namespace gazebo
     /// \param[in] r New right target velocity
     void SetVelocity(const double &l, const double &r)
     {
+      cout << "left : " << l << ", right : " << r << endl;
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
     }

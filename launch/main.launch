@@ -13,15 +13,17 @@
     <arg name="verbose" value="false"/>
   </include>
   <node name="main" pkg="my_robot" type="main"/>
+  <!--
   <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
   <include file="$(find my_robot)/launch/empty_world.launch">
     <arg name="node_name" value="gazebo_filter"/>
     <arg name="world_name" value="$(find my_robot)/gazebo/filter.world"/>
     <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="true"/>
+    <arg name="gui" value="false"/>
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="false"/>
-  </include>
+    </include>
+    -->
 </launch>

@@ -73,14 +73,14 @@
         </visual>
       </link>
       
-      <link name="left_wheel">
-        <pose>0.1 0.13 0.1 0 1.5707 1.5707</pose>
+      <link name="right_wheel">
+        <pose>0.1 0.125 0.1 0 1.5707 1.5707</pose>
 	<inertial>
-	  <mass>0.01</mass>
+	  <mass>0.1</mass>
 	  <inertia>
-            <ixx>0.000026975</ixx>
-            <iyy>0.000026975</iyy>
-            <izz>0.00005</izz>
+            <ixx>0.00026975</ixx>
+            <iyy>0.00026975</iyy>
+            <izz>0.0005</izz>
             <ixy>0</ixy>
             <ixz>0</ixz>
             <iyz>0</iyz>
@@ -112,14 +112,14 @@
         </visual>
       </link>
 
-      <link name="right_wheel">
-        <pose>0.1 -0.13 0.1 0 1.5707 1.5707</pose>
+      <link name="left_wheel">
+        <pose>0.1 -0.125 0.1 0 1.5707 1.5707</pose>
 	<inertial>
-	  <mass>0.01</mass>
+	  <mass>0.1</mass>
 	  <inertia>
-            <ixx>0.000026975</ixx>
-            <iyy>0.000026975</iyy>
-            <izz>0.00005</izz>
+            <ixx>0.00026975</ixx>
+            <iyy>0.00026975</iyy>
+            <izz>0.0005</izz>
             <ixy>0</ixy>
             <ixz>0</ixz>
             <iyz>0</iyz>
@@ -192,7 +192,7 @@
           </camera>
 	  <plugin name="camera_plugin" filename="libgazebo_ros_openni_kinect.so">
             <baseline>0.2</baseline>
-            <alwaysOn>true</alwaysOn>
+            <alwaysOn>1</alwaysOn>
             <!-- Keep this zero, update_rate in the parent <sensor> tag
 		 will control the frame rate. -->
             <updateRate>0.0</updateRate>
@@ -227,26 +227,26 @@
 	<parent>chassis</parent>
       </joint>
       
-      <joint type="revolute" name="left_wheel_hinge">
-        <pose>0 0 -0.03 0 0 0</pose>
-        <child>left_wheel</child>
-        <parent>chassis</parent>
-        <axis>
-          <xyz>0 0 1</xyz>
-        </axis>
-      </joint>
-
       <joint type="revolute" name="right_wheel_hinge">
-        <pose>0 0 0.03 0 0 0</pose>
+        <pose>0 0 -0.03 0 0 0</pose>
         <child>right_wheel</child>
         <parent>chassis</parent>
         <axis>
           <xyz>0 0 1</xyz>
         </axis>
       </joint>
+
+      <joint type="revolute" name="left_wheel_hinge">
+        <pose>0 0 0.03 0 0 0</pose>
+        <child>left_wheel</child>
+        <parent>chassis</parent>
+        <axis>
+          <xyz>0 0 -1</xyz>
+        </axis>
+      </joint>
       
       <plugin name='control' filename='libmy_robot_plugin.so'>
-	<velocity>15</velocity>
+	<velocity>10</velocity>
       </plugin>
     </model>
   </world>
