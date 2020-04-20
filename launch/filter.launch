@@ -1,16 +1,14 @@
 <launch>
-  <param name="joy_node/dev" value="/dev/input/js0"/>
-  <node name="joy_node" pkg="joy" type="joy_node"/>
+  <env name="GAZEBO_MASTER_URI" value="http://localhost:11346"/>
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find my_robot)/launch/empty_world.launch">
-    <arg name="node_name" value="gazebo_moving_robot"/>
-    <arg name="world_name" value="$(find my_robot)/gazebo/my_robot.world"/>
-    <arg name="paused" value="false"/>
+    <arg name="node_name" value="gazebo_filter"/>
+    <arg name="world_name" value="$(find my_robot)/gazebo/filter.world"/>
+    <arg name="paused" value="true"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
     <arg name="recording" value="false"/>
     <arg name="debug" value="false"/>
     <arg name="verbose" value="false"/>
   </include>
-  <node name="main" pkg="my_robot" type="main"/>
 </launch>

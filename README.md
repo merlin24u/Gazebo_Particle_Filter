@@ -6,7 +6,7 @@
 
 ## Instructions
 
-* Build Gazebo part (inside `/gazebo`)
+* Build Gazebo plugins (inside `/gazebo`)
 
 ```
 mkdir build
@@ -15,7 +15,7 @@ cmake ..
 make
 ```
 
-* Build ROS part (inside `catkin_ws`)
+* Build ROS main node (inside `catkin_ws`)
 
 ```
 catkin_make
@@ -25,6 +25,7 @@ catkin_make
 
 ```
 roslaunch my_robot main.launch
+roslaunch my_robot filter.launch
 ```
 
 * Launch gazebo seperatly (inside `/gazebo`)
@@ -32,6 +33,7 @@ roslaunch my_robot main.launch
 ```
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:~/catkin_ws/src/my_robot/gazebo/build
 gazebo -s libgazebo_ros_api_plugin.so my_robot.world
+gazebo -s libgazebo_ros_api_plugin.so filter.world
 ```
 
 * Launch ROS seperatly

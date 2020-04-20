@@ -76,7 +76,7 @@ namespace gazebo
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
 							    "/my_robot/vel_cmd",
 							    100,
-							    boost::bind(&MyRobotPlugin::OnRosMsg, this, _1),
+							    boost::bind(&MyRobotPlugin::onRosMsg, this, _1),
 							    ros::VoidPtr(), &this->rosQueue);
       this->rosSub = this->rosNode->subscribe(so);
 
@@ -88,31 +88,29 @@ namespace gazebo
     /// \brief Handle an incoming message from ROS
     /// \param[in] data Joy inputs that is used to set the velocity
     /// of the MyRobot.
-    void OnRosMsg(const geometry_msgs::TwistConstPtr &data)
+    void onRosMsg(const geometry_msgs::TwistConstPtr &data)
     {
-      float x = data->linear.x * 1000.0; // from meters to millimeters
-      float th = data->angular.z * (BASE_WIDTH/2); // in mm
+      float x = data->linear.x * 1000.0;
+      float th = data->angular.z * (BASE_WIDTH/2);
       float k = max(abs(x - th), abs(x + th));
       
-      // sending commands higher than max speed will fail
+      // scale cmd_vel with max speed
       if (k > MAX_SPEED){
 	x = x * MAX_SPEED / k;
 	th = th * MAX_SPEED / k;
       }
 
       if(x >= 0)
-	this->SetVelocity(x - th, -x - th);
+	this->setVelocity(x - th, x + th);
       else
-	this->SetVelocity(x + th, -x + th);
-	
+	this->setVelocity(x + th, x - th);
     }
 
     /// \brief Set the velocity of the MyRobot
     /// \param[in] l New left target velocity
     /// \param[in] r New right target velocity
-    void SetVelocity(const double &l, const double &r)
+    void setVelocity(const double &l, const double &r)
     {
-      cout << "left : " << l << ", right : " << r << endl;
       this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
     }
