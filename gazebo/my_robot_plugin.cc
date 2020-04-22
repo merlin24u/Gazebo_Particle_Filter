@@ -111,8 +111,8 @@ namespace gazebo
     /// \param[in] r New right target velocity
     void setVelocity(const double &l, const double &r)
     {
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
+      this->model->GetJoint("my_robot::left_wheel_hinge")->SetVelocity(0, l);
+      this->model->GetJoint("my_robot::right_wheel_hinge")->SetVelocity(0, r);
     }
 
   private:

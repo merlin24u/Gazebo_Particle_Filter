@@ -35,7 +35,7 @@ struct Particle{
     setColor(color_idx);
   }
 
-  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle), obs(NB_OBS, 0.0){
+  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle), obs(p.obs){
     weight = 1.0 / N;
     setColor(color_idx);
   }
@@ -280,7 +280,7 @@ namespace gazebo{
       cout << endl;
 
       // Resampling
-      if(max_weight >= 0.3){
+      if(max_weight >= 0.5){
 	vector<Particle> new_particles;
 	vector<float> cum_sum(weights.size());
 	uniform_real_distribution<float> distribution_weight(0.0, 1.0);
@@ -357,8 +357,8 @@ namespace gazebo{
 	break;
       }
       
-      this->model->GetJoint("left_wheel_hinge")->SetVelocity(0, l);
-      this->model->GetJoint("right_wheel_hinge")->SetVelocity(0, r);
+      this->model->GetJoint("my_robot_filter::left_wheel_hinge")->SetVelocity(0, l);
+      this->model->GetJoint("my_robot_filter::right_wheel_hinge")->SetVelocity(0, r);
 
       // Move particle p in world 
       this->world->Step(1000); // nb of iterations

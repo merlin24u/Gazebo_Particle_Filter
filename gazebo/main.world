@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-  <world name="filter_world">
+  <world name="main_world">
     <!-- A global light source -->
     <include>
       <uri>model://sun</uri>
@@ -18,12 +18,11 @@
     <!-- model -->
     <model name="my_robot">
       <include>
-        <uri>model://My_robot_filter</uri>
+        <uri>model://My_robot</uri>
       </include>
-
-      <plugin name='control_filter' filename='libfilter_plugin.so'>
+      
+      <plugin name='control' filename='libmy_robot_plugin.so'>
 	<velocity>10</velocity>
-	<nb_particles>10</nb_particles>
       </plugin>
     </model>
   </world>
