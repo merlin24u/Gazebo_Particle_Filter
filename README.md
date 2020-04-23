@@ -6,16 +6,8 @@
 
 ## Instructions
 
-* Build Gazebo plugins (inside `/gazebo`)
 
-```
-mkdir build
-cd build
-cmake ..
-make
-```
-
-* Build ROS main node (inside `catkin_ws`)
+* Build ROS node and plugins (inside `catkin_ws`) with ROS package named `gazebo_particle_filter`
 
 ```
 catkin_make
@@ -26,21 +18,4 @@ catkin_make
 ```
 roslaunch my_robot main.launch
 roslaunch my_robot filter.launch
-```
-
-* Launch gazebo seperatly (inside `/gazebo`)
-
-```
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:~/catkin_ws/src/my_robot/gazebo/build
-gazebo -s libgazebo_ros_api_plugin.so my_robot.world
-gazebo -s libgazebo_ros_api_plugin.so filter.world
-```
-
-* Launch ROS seperatly
-
-```
-roscore
-rosparam set joy_node/dev "/dev/input/js0"
-rosrun joy joy_node
-rosrun my_robot main
 ```

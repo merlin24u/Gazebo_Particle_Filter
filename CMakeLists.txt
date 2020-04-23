@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(my_robot)
+project(gazebo_particle_filter)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -59,7 +59,7 @@ find_package(OpenCV REQUIRED)
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
-   Obs.msg
+   Sensor.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -125,14 +125,18 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
-  ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS}
+  include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS}
 )
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/my_robot.cpp
-# )
+## Build plugins
+add_library(my_robot_plugin SHARED src/my_robot_plugin.cpp)
+add_library(filter_plugin SHARED src/filter_plugin.cpp)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(my_robot_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(filter_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+
+add_dependencies(filter_plugin gazebo_particle_filter_generate_messages_cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -216,4 +220,4 @@ include_directories(
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES} ${OpenCV_LIBS})
-add_dependencies(main my_robot_generate_messages_cpp)
+add_dependencies(main gazebo_particle_filter_generate_messages_cpp)

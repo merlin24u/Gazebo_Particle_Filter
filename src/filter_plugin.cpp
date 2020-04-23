@@ -6,8 +6,8 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
+#include <gazebo_particle_filter/Sensor.h>
 #include <geometry_msgs/Twist.h>
-#include <my_robot/Obs.h>
 #include <thread>
 #include <vector>
 #include <math.h>
@@ -214,21 +214,21 @@ namespace gazebo{
 
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so_cam =
-	ros::SubscribeOptions::create<my_robot::Obs>(
-						     "/my_robot/camera",
-						     100,
-						     boost::bind(&FilterPlugin::on_camera, this, _1),
-						     ros::VoidPtr(), &this->rosQueue_cam);
+	ros::SubscribeOptions::create<gazebo_particle_filter::Sensor>(
+								      "/my_robot/camera",
+								      100,
+								      boost::bind(&FilterPlugin::on_camera, this, _1),
+								      ros::VoidPtr(), &this->rosQueue_cam);
       
       this->rosSub_cam = this->rosNode->subscribe(so_cam);
 
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so_cam_filter =
-	ros::SubscribeOptions::create<my_robot::Obs>(
-						     "/filter/camera",
-						     100,
-						     boost::bind(&FilterPlugin::on_camera_filter, this, _1),
-						     ros::VoidPtr(), &this->rosQueue_cam);
+	ros::SubscribeOptions::create<gazebo_particle_filter::Sensor>(
+								      "/filter/camera",
+								      100,
+								      boost::bind(&FilterPlugin::on_camera_filter, this, _1),
+								      ros::VoidPtr(), &this->rosQueue_cam);
       
       this->rosSub_cam_filter = this->rosNode->subscribe(so_cam_filter);
 
@@ -250,7 +250,7 @@ namespace gazebo{
 
     /// \brief Handle an incoming message from ROS camera_depth
     /// \param[in] msg ROS camera_depth data
-    void on_camera(const my_robot::ObsConstPtr &msg)
+    void on_camera(const gazebo_particle_filter::SensorConstPtr &msg)
     {
       int i;
       // Check if all particles have non-zero observation data
@@ -302,7 +302,7 @@ namespace gazebo{
 
     /// \brief Handle an incoming message from ROS camera_depth particle
     /// \param[in] msg ROS camera_depth data
-    void on_camera_filter(const my_robot::ObsConstPtr &msg)
+    void on_camera_filter(const gazebo_particle_filter::SensorConstPtr &msg)
     {
       particles[P].obs = msg->data;
     }

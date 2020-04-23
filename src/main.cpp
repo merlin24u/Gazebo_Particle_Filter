@@ -3,7 +3,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Joy.h>
-#include <my_robot/Obs.h>
+#include <gazebo_particle_filter/Sensor.h>
 #include <geometry_msgs/Twist.h>
 #include <opencv2/core/mat.hpp>
 #include "desc_robot.hpp"
@@ -17,8 +17,8 @@ private :
 public :
   MyRobot(ros::NodeHandle &n) : it(n) {
     cmd_pub = n.advertise<geometry_msgs::Twist>("/my_robot/vel_cmd", 100);
-    camera_pub = n.advertise<my_robot::Obs>("/my_robot/camera", 100);
-    camera_filter_pub = n.advertise<my_robot::Obs>("/filter/camera", 100);
+    camera_pub = n.advertise<gazebo_particle_filter::Sensor>("/my_robot/camera", 100);
+    camera_filter_pub = n.advertise<gazebo_particle_filter::Sensor>("/filter/camera", 100);
 
     // Subscrive to input video feed
     image_sub = it.subscribe("/camera/depth/image_raw", 100,
@@ -38,7 +38,7 @@ public :
   }
 
   void imagePub(const sensor_msgs::ImageConstPtr &img){
-    my_robot::Obs msg;
+    gazebo_particle_filter::Sensor msg;
     int res = imageCb(img, msg);
 
     if(res != -1)
@@ -46,7 +46,7 @@ public :
   }
 
   void imageFilterPub(const sensor_msgs::ImageConstPtr &img){
-    my_robot::Obs msg;
+    gazebo_particle_filter::Sensor msg;
     int res = imageCb(img, msg);
 
     if(res != -1)
@@ -54,7 +54,7 @@ public :
   }
 
   // Conversion Msg -> openCV image
-  int imageCb(const sensor_msgs::ImageConstPtr& img, my_robot::Obs &msg)
+  int imageCb(const sensor_msgs::ImageConstPtr &img, gazebo_particle_filter::Sensor &msg)
   {
     cv_bridge::CvImagePtr cv_ptr;
     try{

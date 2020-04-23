@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>my_robot</name>
+  <name>gazebo_particle_filter</name>
   <version>1.0.0</version>
-  <description>My_robot package</description>
+  <description>The gazebo_particle_filter package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -72,6 +72,6 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <gazebo_ros plugin_path="${prefix}/gazebo/build" gazebo_model_path="${prefix}/models"/>
+    <gazebo_ros plugin_path="${prefix}/../../lib" gazebo_model_path="${prefix}/models"/>
   </export>
 </package>
