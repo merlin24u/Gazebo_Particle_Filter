@@ -1,11 +1,10 @@
 #ifndef _FILTER_PLUGIN_HH_
 #define _FILTER_PLUGIN_HH_
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
+#include <gazebo/gazebo.hh>
+#include <gazebo/physics/physics.hh>
 #include <gazebo_particle_filter/Sensor.h>
 #include <geometry_msgs/Twist.h>
 #include <thread>
@@ -14,13 +13,9 @@
 #include <random>
 #include <algorithm>
 #include <limits>
-#include "../src/desc_robot.hpp"
+#include "main.hpp"
 
 using namespace std;
-
-int N = 10; // number of particles used by default
-const int NB_OBS = 3; // number of sensors (cf main.cpp)
-volatile int P = 0; // index of current particle in simulation
 
 struct Particle{
   float posX, posY, angle, weight; // coordinates, orientation and weight of a particle
@@ -30,13 +25,13 @@ struct Particle{
   ignition::math::Color color;
   string color_name;
 
-  Particle(float x, float y, float alpha, int color_idx) : posX(x), posY(y), angle(alpha), obs(NB_OBS, 0.0){
-    weight = 1.0 / N;
+  Particle(float x, float y, float alpha, int color_idx, int nbp, int nbs) : posX(x), posY(y), angle(alpha), obs(nbs, 0.0){
+    weight = 1.0 / nbp;
     setColor(color_idx);
   }
 
-  Particle(const Particle &p, int color_idx) : posX(p.posX), posY(p.posY), angle(p.angle), obs(p.obs){
-    weight = 1.0 / N;
+  Particle(const Particle &p, int color_idx, int nbp) : posX(p.posX), posY(p.posY), angle(p.angle), obs(p.obs){
+    weight = 1.0 / nbp;
     setColor(color_idx);
   }
 
@@ -133,8 +128,13 @@ namespace gazebo{
 
     /// \brief Rng distribution for particles direction
     uniform_int_distribution<int> distribution_dir;
+
+    volatile int P = 0; // index of current particle in simulation
   
   public:
+    static const int NB_OBS = 3; // number of sensors (cf main.cpp)
+    int N = 10; // number of particles used by default
+    
     /// \brief Constructor
     FilterPlugin() {}
 
@@ -160,7 +160,7 @@ namespace gazebo{
 
       // Check that sdf elements exist, then read the values
       if (_sdf->HasElement("velocity"))
-	MAX_SPEED = _sdf->Get<double>("velocity");
+	MyRobot::MAX_SPEED = _sdf->Get<double>("velocity");
       if (_sdf->HasElement("nb_particles"))
 	N = _sdf->Get<double>("nb_particles");
 
@@ -169,8 +169,8 @@ namespace gazebo{
       generator = default_random_engine(rd());
       distribution_color = uniform_int_distribution<int>(0, 6);
       distribution_dir = uniform_int_distribution<int>(0, 3);
-      uniform_real_distribution<float> distribution_width(-MAX_WIDTH + SIZE_ROBOT, MAX_WIDTH - SIZE_ROBOT);
-      uniform_real_distribution<float> distribution_height(-MAX_HEIGHT + SIZE_ROBOT, MAX_HEIGHT - SIZE_ROBOT);
+      uniform_real_distribution<float> distribution_width(-MyRobot::MAX_WIDTH + MyRobot::SIZE_ROBOT, MyRobot::MAX_WIDTH - MyRobot::SIZE_ROBOT);
+      uniform_real_distribution<float> distribution_height(-MyRobot::MAX_HEIGHT + MyRobot::SIZE_ROBOT, MyRobot::MAX_HEIGHT - MyRobot::SIZE_ROBOT);
       uniform_real_distribution<float> distribution_angle(0, 6.28319);
       
       for(int i = 0; i < N; i++){
@@ -179,7 +179,7 @@ namespace gazebo{
 	float angle = distribution_angle(generator);
 	int color_idx = distribution_color(generator);
 	
-	Particle p(posX, posY, angle, color_idx);
+	Particle p(posX, posY, angle, color_idx, N, NB_OBS);
 	particles.push_back(p);
       }
 
@@ -292,7 +292,7 @@ namespace gazebo{
 	      return w <= weight;
 	    });
 	  int idx = it - cum_sum.begin();
-	  Particle p(particles[idx], color_idx);
+	  Particle p(particles[idx], color_idx, N);
 	  new_particles.push_back(p);
 	}
 
@@ -339,21 +339,21 @@ namespace gazebo{
       switch(distribution_dir(generator)){
       case 0:
 	// Forward
-	r = l = MAX_SPEED;
+	r = l = MyRobot::MAX_SPEED;
 	break;
       case 1:
 	// Backward
-	r = l = -MAX_SPEED;
+	r = l = -MyRobot::MAX_SPEED;
 	break;
       case 2:
 	// Left
-	r = MAX_SPEED;
-	l = -MAX_SPEED;
+	r = MyRobot::MAX_SPEED;
+	l = -MyRobot::MAX_SPEED;
 	break;
       case 3:
 	// Right
-	r = -MAX_SPEED;
-	l = MAX_SPEED;
+	r = -MyRobot::MAX_SPEED;
+	l = MyRobot::MAX_SPEED;
 	break;
       }
       
@@ -375,12 +375,12 @@ namespace gazebo{
     float fctObservation(float obs, float obs_p){
       float res = 0.0;
       
-      if(obs == V_MIN)
-	res = cdf(0.5, obs_p, STD_DEV);
-      else if(obs == V_MAX)
-	res = 1 - cdf(obs - 0.5, obs_p, STD_DEV);
+      if(obs == MyRobot::V_MIN)
+	res = cdf(0.5, obs_p, MyRobot::STD_DEV);
+      else if(obs == MyRobot::V_MAX)
+	res = 1 - cdf(obs - 0.5, obs_p, MyRobot::STD_DEV);
       else 
-	res = pdf(obs, obs_p, STD_DEV);
+	res = pdf(obs, obs_p, MyRobot::STD_DEV);
 
       return res;
     }

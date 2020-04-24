@@ -129,8 +129,8 @@ include_directories(
 )
 
 ## Build plugins
-add_library(my_robot_plugin SHARED src/my_robot_plugin.cpp)
-add_library(filter_plugin SHARED src/filter_plugin.cpp)
+add_library(my_robot_plugin SHARED src/my_robot_plugin.cpp src/main.cpp)
+add_library(filter_plugin SHARED src/filter_plugin.cpp src/main.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(my_robot_plugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})

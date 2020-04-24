@@ -1,25 +1,22 @@
 #ifndef _MYROBOT_PLUGIN_HH_
 #define _MYROBOT_PLUGIN_HH_
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
+#include <gazebo/gazebo.hh>
+#include <gazebo/physics/physics.hh>
 #include <geometry_msgs/Twist.h>
 #include <thread>
 #include <vector>
 #include <math.h>
-#include "../src/desc_robot.hpp"
+#include "main.hpp"
 
 using namespace std;
 
-namespace gazebo
-{
+namespace gazebo{
   /// \brief A plugin to control a MyRobot sensor.
-  class MyRobotPlugin : public ModelPlugin
-  {
-
+  class MyRobotPlugin : public ModelPlugin{
+    
   private:
     /// \brief Pointer to the model.
     physics::ModelPtr model;
@@ -57,7 +54,7 @@ namespace gazebo
 
       // Check that the velocity element exists, then read the value
       if (_sdf->HasElement("velocity"))
-	MAX_SPEED = _sdf->Get<double>("velocity");
+	MyRobot::MAX_SPEED = _sdf->Get<double>("velocity");
 
       // Initialize ros, if it has not already bee initialized.
       if(!ros::isInitialized()){
@@ -88,16 +85,15 @@ namespace gazebo
     /// \brief Handle an incoming message from ROS
     /// \param[in] data Joy inputs that is used to set the velocity
     /// of the MyRobot.
-    void onRosMsg(const geometry_msgs::TwistConstPtr &data)
-    {
+    void onRosMsg(const geometry_msgs::TwistConstPtr &data){
       float x = data->linear.x * 1000.0;
-      float th = data->angular.z * (BASE_WIDTH/2);
+      float th = data->angular.z * (MyRobot::BASE_WIDTH / 2);
       float k = max(abs(x - th), abs(x + th));
       
       // scale cmd_vel with max speed
-      if (k > MAX_SPEED){
-	x = x * MAX_SPEED / k;
-	th = th * MAX_SPEED / k;
+      if (k > MyRobot::MAX_SPEED){
+	x = x * MyRobot::MAX_SPEED / k;
+	th = th * MyRobot::MAX_SPEED / k;
       }
 
       if(x >= 0)
@@ -109,16 +105,14 @@ namespace gazebo
     /// \brief Set the velocity of the MyRobot
     /// \param[in] l New left target velocity
     /// \param[in] r New right target velocity
-    void setVelocity(const double &l, const double &r)
-    {
+    void setVelocity(const double &l, const double &r){
       this->model->GetJoint("my_robot::left_wheel_hinge")->SetVelocity(0, l);
       this->model->GetJoint("my_robot::right_wheel_hinge")->SetVelocity(0, r);
     }
 
   private:
     /// \brief ROS helper function that processes messages
-    void QueueThread()
-    {
+    void QueueThread(){
       static const double timeout = 0.01;
       while (this->rosNode->ok())
 	{
