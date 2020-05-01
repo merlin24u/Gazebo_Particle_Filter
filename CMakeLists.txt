@@ -218,6 +218,6 @@ add_dependencies(filter_plugin gazebo_particle_filter_generate_messages_cpp)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(main src/main.cpp)
+add_executable(main src/main.cpp src/main.hpp)
 target_link_libraries(main ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(main gazebo_particle_filter_generate_messages_cpp)
