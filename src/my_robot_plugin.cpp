@@ -71,7 +71,7 @@ namespace gazebo{
       // Create a named topic, and subscribe to it.
       ros::SubscribeOptions so =
 	ros::SubscribeOptions::create<geometry_msgs::Twist>(
-							    "/my_robot/vel_cmd",
+							    "/cmd_vel",
 							    100,
 							    boost::bind(&MyRobotPlugin::onRosMsg, this, _1),
 							    ros::VoidPtr(), &this->rosQueue);
